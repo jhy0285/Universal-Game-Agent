@@ -1,0 +1,7 @@
+{
+  "target": "uga-test-game",
+  "actions": {
+    "move_left": "LEFT", "move_right": "RIGHT", "move_up": "UP", "move_down": "DOWN",
+    "jump": "SPACE", "attack": "Z", "use_item": "X"
+  }
+}

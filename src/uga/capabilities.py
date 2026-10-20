@@ -16,7 +16,11 @@ def capabilities() -> dict:
         "godot": shutil.which("godot") or shutil.which("godot4"),
         "jadx": shutil.which("jadx"),
         "ghidra": shutil.which("analyzeHeadless"),
-        "laya": {"available": False, "reason": "upstream model and inference API not verified"},
+        "laya": {
+            "available": importlib.util.find_spec("laya") is not None,
+            "upstream": "https://github.com/NandhaKishorM/laya",
+            "reason": "Router API verified; local weights/inference not validated",
+        },
         "rea": {"available": False, "reason": "external integration not configured"},
         "unity": {"available": False, "reason": "Unity Editor/license required"},
     }

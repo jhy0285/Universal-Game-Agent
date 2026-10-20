@@ -1,7 +1,7 @@
 from uuid import uuid4
 
-from uga.core.contracts import EvaluationResult
-from uga.core.errors import AuthorizationRequired
+from uga.core.contracts import ArtifactReference, EvaluationResult
+from uga.core.errors import AuthorizationRequired, UGAError
 from uga.memory.store import Store
 
 
@@ -21,6 +21,11 @@ def compare(
     delta = {
         k: candidate.metrics[k] - v for k, v in baseline.metrics.items() if k in candidate.metrics
     }
+    for report in (baseline, candidate):
+        if any(not 0 <= report.metrics[k] <= 1 for k in ("success_rate", "perception_accuracy")):
+            raise ValueError("rates must be between zero and one")
+        if report.metrics["mean_steps"] < 0 or report.metrics["end_to_end_p95_ms"] <= 0:
+            raise ValueError("invalid step or latency measurement")
     reasons = []
     if not candidate.passed:
         reasons.append("candidate benchmark failed")
@@ -62,6 +67,14 @@ class ExperimentManager:
             "candidate": candidate.model_dump(mode="json"),
             "comparison": comparison,
             "status": "proposed",
+            "evidence": {
+                "baseline": self.store.put_artifact(
+                    baseline.model_dump_json().encode(), "application/json", "json"
+                ).model_dump(mode="json"),
+                "candidate": self.store.put_artifact(
+                    candidate.model_dump_json().encode(), "application/json", "json"
+                ).model_dump(mode="json"),
+            },
         }
         self.store.checkpoint("experiment:" + experiment["id"], experiment)
         return experiment
@@ -74,28 +87,57 @@ class ExperimentManager:
             raise KeyError(experiment_id)
         baseline = EvaluationResult.model_validate(experiment["baseline"])
         candidate = EvaluationResult.model_validate(experiment["candidate"])
+        for key, report in (("baseline", baseline), ("candidate", candidate)):
+            if "evidence" not in experiment:
+                raise UGAError(
+                    "legacy proposal lacks immutable evidence; propose the reports again"
+                )
+            reference = ArtifactReference.model_validate(experiment["evidence"][key])
+            retained = EvaluationResult.model_validate_json(self.store.read_artifact(reference))
+            if retained != report:
+                raise UGAError("proposal differs from its immutable benchmark evidence")
         if not compare(baseline, candidate)["eligible"]:
             raise ValueError("candidate did not pass comparison")
         if experiment["status"] != "proposed":
             raise ValueError("experiment is not awaiting approval")
-        current = self.store.load_checkpoint("active-policy")
-        self.store.checkpoint("previous-policy", current or baseline.configuration["treatment"])
-        self.store.checkpoint("active-policy", candidate.configuration["treatment"])
         experiment["status"] = "approved"
-        self.store.checkpoint("experiment:" + experiment_id, experiment)
-        self.store.checkpoint("active-experiment", {"id": experiment_id})
+
+        def transition(read):
+            pending = read("experiment:" + experiment_id)
+            if (
+                not pending
+                or pending["status"] != "proposed"
+                or pending["candidate"] != experiment["candidate"]
+            ):
+                raise ValueError("proposal changed or was already handled")
+            return {
+                "previous-policy": read("active-policy") or baseline.configuration["treatment"],
+                "active-policy": candidate.configuration["treatment"],
+                "experiment:" + experiment_id: experiment,
+                "active-experiment": {"id": experiment_id},
+            }
+
+        self.store.atomic_checkpoints(transition)
         return experiment
 
     def rollback(self):
         previous = self.store.load_checkpoint("previous-policy")
         if previous is None:
             raise ValueError("no previous policy to restore")
-        self.store.checkpoint("active-policy", previous)
-        active = self.store.load_checkpoint("active-experiment")
-        if active:
-            experiment = self.store.load_checkpoint("experiment:" + active["id"])
-            experiment["status"] = "rolled_back"
-            self.store.checkpoint("experiment:" + active["id"], experiment)
+
+        def transition(read):
+            previous = read("previous-policy")
+            if previous is None:
+                raise ValueError("no previous policy to restore")
+            updates = {"active-policy": previous}
+            active = read("active-experiment")
+            if active:
+                experiment = read("experiment:" + active["id"])
+                experiment["status"] = "rolled_back"
+                updates["experiment:" + active["id"]] = experiment
+            return updates
+
+        self.store.atomic_checkpoints(transition)
         return previous
 
     def monitor(self, observed: EvaluationResult):
@@ -103,6 +145,12 @@ class ExperimentManager:
         if not active:
             raise ValueError("no promoted experiment")
         experiment = self.store.load_checkpoint("experiment:" + active["id"])
+        if experiment["status"] != "approved":
+            raise ValueError("no active approved candidate to monitor")
+        if observed.configuration.get("treatment") != experiment["candidate"]["configuration"].get(
+            "treatment"
+        ):
+            raise ValueError("observed treatment differs from the promoted candidate")
         baseline = EvaluationResult.model_validate(experiment["baseline"])
         comparison = compare(baseline, observed)
         if not comparison["eligible"]:

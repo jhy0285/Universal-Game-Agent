@@ -81,6 +81,23 @@ def test_incomparable_conditions_and_regression_rejected(tmp_path):
         manager.promote(experiment["id"], approved=True)
 
 
+def test_mutated_candidate_cannot_be_promoted(tmp_path):
+    baseline, candidate = reports()
+    manager = ExperimentManager(Store(tmp_path))
+    proposal = manager.propose(baseline, candidate)
+    proposal["candidate"]["metrics"]["mean_steps"] = 1
+    manager.store.checkpoint("experiment:" + proposal["id"], proposal)
+    with pytest.raises(UGAError, match="immutable"):
+        manager.promote(proposal["id"], approved=True)
+
+
+def test_invalid_measurement_cannot_qualify_as_improvement():
+    baseline, candidate = reports()
+    candidate.metrics["mean_steps"] = -1
+    with pytest.raises(ValueError, match="measurement"):
+        compare(baseline, candidate)
+
+
 @pytest.mark.performance
 def test_real_benchmark_and_soak_execute_episodes(tmp_path):
     report = run_benchmark(tmp_path / "bench", seeds=(7, 11))

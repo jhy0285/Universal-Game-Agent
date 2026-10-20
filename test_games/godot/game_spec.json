@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "name": "UGA Test Arena",
+  "genre": "top_down_arena",
+  "movement": {
+    "speed": 4,
+    "axes": 2
+  },
+  "combat": {
+    "hp": 100,
+    "enemies": 3,
+    "attack_range": 14
+  },
+  "ui": [
+    "HP",
+    "authentication indicator",
+    "goal status"
+  ],
+  "state_transitions": [
+    "playing -> won",
+    "playing -> dead",
+    "playing -> human_handoff"
+  ],
+  "systems": [
+    "movement",
+    "collision",
+    "combat",
+    "healing item"
+  ],
+  "findings": [],
+  "requirements": [
+    "2D arena with 3 enemies"
+  ]
+}

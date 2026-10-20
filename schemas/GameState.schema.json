@@ -1,0 +1,418 @@
+{
+  "$defs": {
+    "Detection_Point_": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "confidence",
+        "source"
+      ],
+      "title": "Detection[Point]",
+      "type": "object"
+    },
+    "Detection_bool_": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "confidence",
+        "source"
+      ],
+      "title": "Detection[bool]",
+      "type": "object"
+    },
+    "Detection_dict_str__int__": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "confidence",
+        "source"
+      ],
+      "title": "Detection[dict[str, int]]",
+      "type": "object"
+    },
+    "Detection_float_": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "confidence",
+        "source"
+      ],
+      "title": "Detection[float]",
+      "type": "object"
+    },
+    "Detection_str_": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "confidence",
+        "source"
+      ],
+      "title": "Detection[str]",
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "frame_id": {
+      "minimum": 0,
+      "title": "Frame Id",
+      "type": "integer"
+    },
+    "captured_at": {
+      "format": "date-time",
+      "title": "Captured At",
+      "type": "string"
+    },
+    "player_position": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Detection_Point_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "hp": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Detection_float_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "mp": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Detection_float_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "enemies": {
+      "items": {
+        "$ref": "#/$defs/Detection_Point_"
+      },
+      "title": "Enemies",
+      "type": "array"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/Detection_Point_"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "obstacles": {
+      "items": {
+        "maxItems": 4,
+        "minItems": 4,
+        "prefixItems": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Obstacles",
+      "type": "array"
+    },
+    "inventory": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Detection_dict_str__int__"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "map_id": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Detection_str_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "ui_state": {
+      "default": "unknown",
+      "enum": [
+        "gameplay",
+        "authentication",
+        "disconnected",
+        "error",
+        "unknown"
+      ],
+      "title": "Ui State",
+      "type": "string"
+    },
+    "auth_required": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Detection_bool_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "goal_complete": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Detection_bool_"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "frame_sha256": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Frame Sha256"
+    }
+  },
+  "required": [
+    "frame_id"
+  ],
+  "title": "GameState",
+  "type": "object"
+}

@@ -1,0 +1,132 @@
+{
+  "$defs": {
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "subject": {
+          "title": "Subject",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "kind": {
+          "default": "fact",
+          "enum": [
+            "fact",
+            "hypothesis"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "statement",
+        "source",
+        "confidence"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "genre": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Genre"
+    },
+    "movement": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Movement",
+      "type": "object"
+    },
+    "combat": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Combat",
+      "type": "object"
+    },
+    "ui": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Ui",
+      "type": "array"
+    },
+    "state_transitions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "State Transitions",
+      "type": "array"
+    },
+    "systems": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Systems",
+      "type": "array"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "requirements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Requirements",
+      "type": "array"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "GameSpec",
+  "type": "object"
+}

@@ -1,0 +1,214 @@
+{
+  "source_commit": "7d010d1b8eacf33a3720f9dd02a7fa0ec03b74c0",
+  "runtime": {
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "python": "3.12.14",
+    "logical_cpus": 5,
+    "gpu": "unmeasured"
+  },
+  "dependencies": {
+    "pydantic": "2.14.1",
+    "fastapi": "0.151.0",
+    "uvicorn": "0.54.0",
+    "Pillow": "12.3.0",
+    "psutil": "7.2.2",
+    "pytest": "9.1.1",
+    "ruff": "0.17.1"
+  },
+  "pytest": {
+    "tests": 57,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "pytest_seconds": 12.671,
+  "line_coverage_percent": 72.70511779041429,
+  "checks": {
+    "lint": "passed",
+    "format": "passed",
+    "frozen_lock": "passed",
+    "python311_syntax": "passed (not runtime)",
+    "javascript_syntax": "passed Node 24.19.0",
+    "isolated_wheel": "passed",
+    "install_repeatability": "passed twice",
+    "owned_service_start_reuse_restart": "passed",
+    "live_http": {
+      "health": {
+        "status": "ok",
+        "version": "0.1.0"
+      },
+      "dashboard_bytes": 5142,
+      "workflow_id": "c74d58cc-7ce7-4f48-9d5e-404a0201da93",
+      "status": "succeeded",
+      "reference_player_success": true,
+      "engine_executed": false,
+      "artifact_count": 14
+    }
+  },
+  "benchmark": {
+    "command": ".venv/bin/uga improve --output .uga/validation/final-improvement",
+    "seeds": [
+      7,
+      11,
+      19,
+      23,
+      31
+    ],
+    "conditions": {
+      "backend": "reference-pixels-v1",
+      "seeds": [
+        7,
+        11,
+        19,
+        23,
+        31
+      ],
+      "enemy_count": 3,
+      "speed": 4,
+      "obstacles": true,
+      "max_steps": 600,
+      "harness_sha256": "353af8e14466deffdde9bb34eb2708dd4bb70b27cd2d43c93c03ede49adaa922"
+    },
+    "baseline": {
+      "capture_p50_ms": 0.032208001357503235,
+      "capture_p95_ms": 0.11698479866026913,
+      "capture_p99_ms": 0.18899683942436243,
+      "capture_mean_ms": 0.04382888575343472,
+      "perception_p50_ms": 5.685640000592684,
+      "perception_p95_ms": 8.49712520139292,
+      "perception_p99_ms": 9.779342798719881,
+      "perception_mean_ms": 5.975299171479158,
+      "decision_p50_ms": 0.10583599942037836,
+      "decision_p95_ms": 0.6868516000395178,
+      "decision_p99_ms": 0.9750454785535119,
+      "decision_mean_ms": 0.2125536041287943,
+      "control_p50_ms": 0.005067999154562131,
+      "control_p95_ms": 0.010683801519917331,
+      "control_p99_ms": 0.0366428816050757,
+      "control_mean_ms": 0.006364183607321157,
+      "end_to_end_p50_ms": 5.949039001279743,
+      "end_to_end_p95_ms": 8.717624400014758,
+      "end_to_end_p99_ms": 10.261610121378908,
+      "end_to_end_mean_ms": 6.258291502026437,
+      "rss_mb": 32.375,
+      "cpu_seconds": 1.62,
+      "cpu_percent": 96.48881835756768,
+      "success_rate": 1.0,
+      "perception_accuracy": 1.0,
+      "mean_steps": 49.0
+    },
+    "candidate": {
+      "capture_p50_ms": 0.03255800038459711,
+      "capture_p95_ms": 0.10772505029308378,
+      "capture_p99_ms": 0.20804040901566734,
+      "capture_mean_ms": 0.04461268337460448,
+      "perception_p50_ms": 5.800724500659271,
+      "perception_p95_ms": 8.580596100910045,
+      "perception_p99_ms": 9.693560718951632,
+      "perception_mean_ms": 6.161427483402804,
+      "decision_p50_ms": 0.09579099969414528,
+      "decision_p95_ms": 0.9525663474050816,
+      "decision_p99_ms": 2.400389992799321,
+      "decision_mean_ms": 0.25269673744029814,
+      "control_p50_ms": 0.0053130006563151255,
+      "control_p95_ms": 0.010884499715757558,
+      "control_p99_ms": 0.07278293058334387,
+      "control_mean_ms": 0.00895854166932016,
+      "end_to_end_p50_ms": 6.090579499868909,
+      "end_to_end_p95_ms": 9.297178047745549,
+      "end_to_end_p99_ms": 10.271240369766021,
+      "end_to_end_mean_ms": 6.48943134582017,
+      "rss_mb": 32.875,
+      "cpu_seconds": 1.6600000000000001,
+      "cpu_percent": 97.84554934084024,
+      "success_rate": 1.0,
+      "perception_accuracy": 1.0,
+      "mean_steps": 48.0
+    },
+    "comparison": {
+      "eligible": true,
+      "reasons": [],
+      "delta": {
+        "capture_p50_ms": 0.00034999902709387243,
+        "capture_p95_ms": -0.00925974836718535,
+        "capture_p99_ms": 0.019043569591304904,
+        "capture_mean_ms": 0.0007837976211697573,
+        "perception_p50_ms": 0.11508450006658677,
+        "perception_p95_ms": 0.08347089951712405,
+        "perception_p99_ms": -0.08578207976824892,
+        "perception_mean_ms": 0.1861283119236461,
+        "decision_p50_ms": -0.010044999726233073,
+        "decision_p95_ms": 0.2657147473655638,
+        "decision_p99_ms": 1.4253445142458092,
+        "decision_mean_ms": 0.04014313331150385,
+        "control_p50_ms": 0.00024500150175299495,
+        "control_p95_ms": 0.00020069819584022687,
+        "control_p99_ms": 0.03614004897826817,
+        "control_mean_ms": 0.0025943580619990038,
+        "end_to_end_p50_ms": 0.1415404985891655,
+        "end_to_end_p95_ms": 0.5795536477307905,
+        "end_to_end_p99_ms": 0.009630248387113127,
+        "end_to_end_mean_ms": 0.23113984379373242,
+        "rss_mb": 0.5,
+        "cpu_seconds": 0.040000000000000036,
+        "cpu_percent": 1.3567309832725556,
+        "success_rate": 0.0,
+        "perception_accuracy": 0.0,
+        "mean_steps": -1.0
+      },
+      "latency_tolerance": 0.25
+    },
+    "proposal_id": "838ce3a2-04c4-4710-a595-28060df9ba5b",
+    "status": "proposed, not activated"
+  },
+  "long_runs": {
+    "baseline_30_minutes": {
+      "source_commit": "d3f21a8",
+      "result": {
+        "requested_s": 1800.0,
+        "elapsed_s": 1800.2859244870015,
+        "episodes": 6326,
+        "failures": 0,
+        "cancelled": false,
+        "passed": true,
+        "rss_peak_mb": 33.84375,
+        "rss_growth_after_warmup_mb": 0.53515625,
+        "cpu_seconds": 1790.87
+      }
+    },
+    "final_code_60_seconds": {
+      "requested_s": 60.0,
+      "elapsed_s": 60.26381032000063,
+      "episodes": 195,
+      "failures": 0,
+      "cancelled": false,
+      "passed": true,
+      "rss_peak_mb": 33.70703125,
+      "rss_growth_after_warmup_mb": 0.04296875,
+      "cpu_seconds": 60.02
+    },
+    "hours_2_4_8_16": "not run"
+  },
+  "wheel_sha256": "88c0f6c092280504a98f624c7ff7004f7655e4b02d46090f06059f1d700a1233",
+  "environment_draft": {
+    "status": "saved",
+    "install_script": true,
+    "start_skill": true,
+    "added_custom_domain": "huggingface.co",
+    "published": false,
+    "fresh_task_restoration": "not verified"
+  },
+  "unrun": [
+    "Windows 11 runtime",
+    "Python 3.11 runtime",
+    "remote CI",
+    "actual Godot import/smoke/play/export (approval pending)",
+    "JADX/Ghidra/REA real calls",
+    "Laya checkpoint license/integrity/inference",
+    "OCR/VLM performance",
+    "browser rendering",
+    "GPU/VRAM",
+    "2/4/8/16 hour soak"
+  ],
+  "source_python_tree_sha256": "fbceb57b62bbb148365b66ce1a6524549ddec9e0dcc4bbd305044271efa5a584"
+}

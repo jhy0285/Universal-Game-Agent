@@ -1,0 +1,74 @@
+{
+  "$defs": {
+    "AgentKind": {
+      "enum": [
+        "player",
+        "reverse",
+        "builder",
+        "workflow"
+      ],
+      "title": "AgentKind",
+      "type": "string"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "agent": {
+      "$ref": "#/$defs/AgentKind"
+    },
+    "level": {
+      "default": "info",
+      "enum": [
+        "debug",
+        "info",
+        "warning",
+        "error"
+      ],
+      "title": "Level",
+      "type": "string"
+    },
+    "event": {
+      "title": "Event",
+      "type": "string"
+    },
+    "message": {
+      "title": "Message",
+      "type": "string"
+    },
+    "data": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Data",
+      "type": "object"
+    },
+    "timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_id",
+    "agent",
+    "event",
+    "message"
+  ],
+  "title": "AgentEvent",
+  "type": "object"
+}

@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "Action": {
+      "enum": [
+        "wait",
+        "move_left",
+        "move_right",
+        "move_up",
+        "move_down",
+        "jump",
+        "attack",
+        "use_item"
+      ],
+      "title": "Action",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "action": {
+      "$ref": "#/$defs/Action",
+      "default": "wait"
+    },
+    "duration_s": {
+      "default": 0.05,
+      "exclusiveMinimum": 0,
+      "maximum": 0.25,
+      "title": "Duration S",
+      "type": "number"
+    },
+    "confidence": {
+      "default": 0,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "policy": {
+      "title": "Policy",
+      "type": "string"
+    },
+    "based_on_frame": {
+      "minimum": 0,
+      "title": "Based On Frame",
+      "type": "integer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "policy",
+    "based_on_frame"
+  ],
+  "title": "ActionDecision",
+  "type": "object"
+}

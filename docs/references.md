@@ -28,3 +28,16 @@ verification, resource checks and a same-machine benchmark.
 
 Unity requires an installed licensed Editor. It is an extension boundary, not a tested
 engine here. No external AI service is connected.
+
+Additional primary checks:
+
+- [Laya 0.4.12 PyPI metadata](https://pypi.org/pypi/laya/0.4.12/json): published wheel/sdist,
+  Python >=3.10, torch>=2.0, transformers>=4.48. Model-card access was denied by the
+  current proxy policy, so checkpoint availability/license/integrity remain unverified.
+- [MSS license](https://github.com/BoboTiG/python-mss/blob/main/LICENSE.txt): MIT.
+- [Ghidra license](https://github.com/NationalSecurityAgency/ghidra/blob/master/LICENSE): Apache-2.0.
+- [Ghidra AnalyzeHeadless parser](https://github.com/NationalSecurityAgency/ghidra/blob/master/Ghidra/Features/Base/src/main/java/ghidra/app/util/headless/AnalyzeHeadless.java):
+  verified flags `-import`, `-scriptPath`, `-postScript`, `-analysisTimeoutPerFile`, `-deleteProject`.
+- [MCP 2025-06-18 schema](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/2025-06-18/schema.ts):
+  initialize and tools/list/call wire contracts. Only the implemented local adapter is tested;
+  no external AI/MCP client was connected.

@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "AgentKind": {
+      "enum": [
+        "player",
+        "reverse",
+        "builder",
+        "workflow"
+      ],
+      "title": "AgentKind",
+      "type": "string"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "task_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "agent": {
+      "$ref": "#/$defs/AgentKind"
+    },
+    "operation": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Operation",
+      "type": "string"
+    },
+    "parameters": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Parameters",
+      "type": "object"
+    },
+    "timeout_s": {
+      "default": 120,
+      "exclusiveMinimum": 0,
+      "maximum": 86400,
+      "title": "Timeout S",
+      "type": "number"
+    },
+    "authorized": {
+      "default": false,
+      "title": "Authorized",
+      "type": "boolean"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "agent",
+    "operation"
+  ],
+  "title": "TaskSpec",
+  "type": "object"
+}

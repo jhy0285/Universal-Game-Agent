@@ -21,14 +21,16 @@ func _ready() -> void:
         var decoded: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://arena.json"))
         if decoded is Dictionary:
             config = decoded
-    setup(config)
     for arg in OS.get_cmdline_user_args():
+        if arg.begins_with("--uga-seed="):
+            config["seed"] = int(arg.trim_prefix("--uga-seed="))
         if arg.begins_with("--uga-bridge="):
             bridge = arg.trim_prefix("--uga-bridge=")
         if arg.begins_with("--uga-report="):
             report_path = arg.trim_prefix("--uga-report=")
         if arg.begins_with("--uga-run-id="):
             run_id = arg.trim_prefix("--uga-run-id=")
+    setup(config)
     if not bridge.is_empty():
         publish_state()
 
@@ -41,7 +43,9 @@ func setup(config: Dictionary) -> void:
     speed = int(config.get("speed", 4))
     attack_range = int(config.get("attack_range", 14))
     max_steps = int(config.get("max_steps", 600))
-    walls = [Rect2(72, 28, 9, 53)] if config.get("obstacles", true) else []
+    walls.clear()
+    if config.get("obstacles", true):
+        walls.append(Rect2(72, 28, 9, 53))
     var rng := RandomNumberGenerator.new()
     rng.seed = int(config.get("seed", 7))
     var positions: Array[Vector2] = []

@@ -122,7 +122,7 @@ def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -
 
     @app.get("/docs", response_class=HTMLResponse, include_in_schema=False)
     def docs():
-        return '<!doctype html><html lang="en"><meta charset="utf-8"><title>UGA API v1</title><link rel="stylesheet" href="/static/style.css"><main><h1>UGA API v1</h1><p>Local, versioned agent jobs.</p><p><a href="/openapi.json">OpenAPI schema</a> · <a href="/api/v1/contracts">Wire contracts</a> · <a href="/">Dashboard</a></p><p>Send X-UGA-Token or Authorization: Bearer with the local token from the state directory api-token file. Tokens rotate at server startup. Never commit or share this file.</p><p>POST /api/v1/jobs → GET /api/v1/jobs/{id} → POST /api/v1/jobs/{id}/cancel</p><p>The server only runs registered operations. External binary execution is available through explicitly approved CLI commands.</p></main></html>'
+        return '<!doctype html><html lang="en"><meta charset="utf-8"><title>UGA API v1</title><link rel="stylesheet" href="/static/style.css"><main><h1>UGA API v1</h1><p>Local, versioned agent jobs.</p><p><a href="/openapi.json">OpenAPI schema</a> · <a href="/api/v1/contracts">Wire contracts</a> · <a href="/">Dashboard</a></p><p>Send X-UGA-Token or Authorization: Bearer with the local token from the state directory api-token file. Tokens rotate at server startup. Never commit or share this file.</p><p>POST /api/v1/jobs → GET /api/v1/jobs/{id} → POST /api/v1/jobs/{id}/cancel</p><p>The server only runs registered operations. Builder build and Godot workflows require authorized=true and only execute the generated original UGA project. Export requires a matching installed Godot template.</p></main></html>'
 
     @app.get("/health")
     def health():

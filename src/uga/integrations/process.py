@@ -3,7 +3,7 @@ import signal
 import subprocess
 import tempfile
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import psutil
@@ -17,6 +17,7 @@ class ToolResult:
     returncode: int
     output: str
     elapsed_s: float
+    resources: dict[str, float] = field(default_factory=dict)
 
 
 def terminate_owned(process):
@@ -64,6 +65,7 @@ def run_tool(
     approved: bool = False,
     timeout_s=60,
     max_output_bytes=2_000_000,
+    max_rss_mb=512,
     driver=None,
 ) -> ToolResult:
     if not approved:
@@ -72,6 +74,8 @@ def run_tool(
         )
     if not command or not Path(command[0]).is_absolute():
         raise ValueError("use an absolute executable path")
+    if timeout_s <= 0 or max_output_bytes < 1 or max_rss_mb <= 0:
+        raise ValueError("tool time, output and memory budgets must be positive")
     if os.name == "nt" and Path(command[0]).suffix.lower() in (".bat", ".cmd"):
         raise UGAError(
             "Use a direct executable launcher on Windows; batch argument escaping is not supported"
@@ -89,12 +93,25 @@ def run_tool(
             start_new_session=os.name != "nt",
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
         )
+        sampled_rss = sampled_cpu = 0.0
+        last_resource_check = 0.0
         try:
             while process.poll() is None:
                 if time.monotonic() - start > timeout_s:
                     raise TimeoutError("external tool deadline exceeded")
                 if log.tell() > max_output_bytes:
                     raise UGAError("external tool exceeded output limit")
+                if time.monotonic() - last_resource_check >= 0.05:
+                    last_resource_check = time.monotonic()
+                    try:
+                        child = psutil.Process(process.pid)
+                        rss = child.memory_info().rss / 2**20
+                        sampled_rss = max(sampled_rss, rss)
+                        sampled_cpu = max(sampled_cpu, sum(child.cpu_times()[:2]))
+                        if rss > max_rss_mb:
+                            raise UGAError("external tool exceeded memory limit")
+                    except psutil.NoSuchProcess:
+                        pass
                 if driver:
                     driver()
                 time.sleep(0.005)
@@ -104,7 +121,13 @@ def run_tool(
                 raise UGAError("external tool exceeded output limit")
             log.seek(0)
             output = log.read(max_output_bytes).decode("utf-8", "replace")
-            result = ToolResult(command, process.returncode, output, time.monotonic() - start)
+            result = ToolResult(
+                command,
+                process.returncode,
+                output,
+                time.monotonic() - start,
+                {"sampled_peak_rss_mb": sampled_rss, "sampled_cpu_seconds": sampled_cpu},
+            )
             if result.returncode != 0:
                 raise UGAError(
                     f"{Path(command[0]).name} exited {result.returncode}: {output[-4000:]}"

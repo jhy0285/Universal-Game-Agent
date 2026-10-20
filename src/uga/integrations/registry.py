@@ -12,8 +12,14 @@ class AgentRegistry:
                 "contract": TaskSpec.model_json_schema(),
             },
             AgentKind.REVERSE: {"operations": ["analyze"], "requires_target_permission": True},
-            AgentKind.BUILDER: {"operations": ["generate"]},
-            AgentKind.WORKFLOW: {"operations": ["build-play"]},
+            AgentKind.BUILDER: {
+                "operations": ["generate", "build"],
+                "build_requires_authorization": True,
+            },
+            AgentKind.WORKFLOW: {
+                "operations": ["build-play", "reverse-build-play"],
+                "godot_requires_authorization": True,
+            },
         }
 
     def validate(self, task: TaskSpec):

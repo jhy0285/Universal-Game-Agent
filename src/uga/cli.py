@@ -55,9 +55,27 @@ def _main(argv: list[str] | None = None) -> int:
     soak = commands.add_parser("soak", help="Real wall-clock repeated-play health test")
     soak.add_argument("--seconds", type=float, default=1800)
     soak.add_argument("--output", type=Path, default=Path(".uga/soak"))
+    long_run = commands.add_parser(
+        "soak-service", help="Start, inspect or stop an owned background soak"
+    )
+    long_run.add_argument("action", choices=["start", "status", "stop"])
+    long_run.add_argument("--seconds", type=float, default=57600)
+    long_run.add_argument("--output", type=Path, required=True)
     builder = commands.add_parser("builder", help="Generate an original Godot arena project")
     builder.add_argument("--requirements", default="2D arena with 3 enemies")
     builder.add_argument("--output", type=Path, required=True)
+    builder.add_argument("--validate", action="store_true", help="Import, test and play in Godot")
+    builder.add_argument("--allow-external-tools", action="store_true")
+    builder.add_argument("--export-preset", choices=["Linux", "Windows Desktop"])
+    for name in ("builder-edit", "builder-repair"):
+        revision = commands.add_parser(name, help="Revise a separate, authorized Godot candidate")
+        revision.add_argument("source", type=Path)
+        revision.add_argument("--output", type=Path, required=True)
+        revision.add_argument("--authorized", action="store_true")
+        revision.add_argument("--allow-external-tools", action="store_true")
+        if name == "builder-edit":
+            revision.add_argument("--patch", type=Path, required=True)
+            revision.add_argument("--validate", action="store_true")
     reverse = commands.add_parser("reverse", help="Bounded static analysis; never execute samples")
     reverse.add_argument("path", type=Path)
     reverse.add_argument("--authorized", action="store_true")
@@ -71,6 +89,10 @@ def _main(argv: list[str] | None = None) -> int:
     rebuild.add_argument("source", type=Path)
     rebuild.add_argument("--authorized", action="store_true")
     rebuild.add_argument("--output", type=Path, required=True)
+    for command in (workflow, rebuild):
+        command.add_argument("--backend", choices=["reference", "godot"], default="reference")
+        command.add_argument("--allow-external-tools", action="store_true")
+        command.add_argument("--export-preset", choices=["Linux", "Windows Desktop"])
     improve = commands.add_parser(
         "improve", help="Measure a parameter candidate and save a proposal; never auto-approve"
     )
@@ -98,6 +120,9 @@ def _main(argv: list[str] | None = None) -> int:
         tool.add_argument("--output", type=Path, default=Path(".uga/godot"))
         if name == "godot-export":
             tool.add_argument("--preset", choices=["Linux", "Windows Desktop"], default="Linux")
+        if name == "godot-play":
+            tool.add_argument("--seed", type=int)
+            tool.add_argument("--game-executable", type=Path)
     args = parser.parse_args(argv)
     if args.command == "doctor":
         print(json.dumps(capabilities(), indent=2, ensure_ascii=False))
@@ -194,35 +219,120 @@ def _main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, indent=2))
         return 0 if result["eligible"] else 1
     elif args.command == "soak":
+        import signal
+        import threading
+
+        from uga.supervisor.long_run import FileCancellation
         from uga.supervisor.soak import run_soak
 
-        result = run_soak(args.seconds, args.output)
+        cancelled = threading.Event()
+
+        def request_stop(signum, frame):
+            cancelled.set()
+
+        previous = {
+            sig: signal.signal(sig, request_stop) for sig in (signal.SIGINT, signal.SIGTERM)
+        }
+        try:
+            result = run_soak(
+                args.seconds,
+                args.output,
+                cancel=FileCancellation(args.output / "cancel.json", cancelled),
+            )
+        finally:
+            for sig, handler in previous.items():
+                signal.signal(sig, handler)
         print(json.dumps(result, indent=2))
         return 0 if result["passed"] else 1
+    elif args.command == "soak-service":
+        from uga.supervisor.long_run import LongRunManager
+
+        manager = LongRunManager(args.output)
+        result = (
+            manager.start(args.seconds)
+            if args.action == "start"
+            else manager.stop()
+            if args.action == "stop"
+            else manager.status()
+        )
+        print(json.dumps(result, indent=2))
     elif args.command == "builder":
         from uga.agents.builder.agent import generate, parse_requirements
 
-        print(
-            json.dumps(
-                generate(parse_requirements(args.requirements), args.output),
-                indent=2,
-                ensure_ascii=False,
+        if args.export_preset and not args.validate:
+            raise ValueError("--export-preset requires --validate")
+        if args.validate and not args.allow_external_tools:
+            from uga.core.errors import AuthorizationRequired
+
+            raise AuthorizationRequired("Godot validation requires --allow-external-tools")
+        result = generate(parse_requirements(args.requirements), args.output)
+        if args.validate:
+            from uga.agents.builder.pipeline import validate_project
+
+            result["engine"] = validate_project(
+                args.output,
+                args.output.parent / (args.output.name + "-validation"),
+                approved=args.allow_external_tools,
+                export_preset=args.export_preset,
             )
-        )
+            result["built"] = "export" in result["engine"]
+        print(json.dumps(result, indent=2, ensure_ascii=False))
     elif args.command == "reverse":
         from uga.agents.reverse.agent import analyze
 
         print(analyze(args.path, args.output, authorized=args.authorized).model_dump_json(indent=2))
+    elif args.command in ("builder-edit", "builder-repair"):
+        from uga.agents.builder.revision import PatchPlan, repair_project, revise_project
+
+        if args.command == "builder-edit":
+            if args.patch.stat().st_size > 8_000_000:
+                raise ValueError("patch plan exceeds 8 MB")
+            plan = PatchPlan.model_validate_json(args.patch.read_text(encoding="utf-8"))
+            result = revise_project(
+                args.source,
+                args.output,
+                plan,
+                authorized=args.authorized,
+                approved=args.allow_external_tools,
+                validate=args.validate,
+            )
+        else:
+            result = repair_project(
+                args.source,
+                args.output,
+                authorized=args.authorized,
+                approved=args.allow_external_tools,
+            )
+        print(json.dumps(result, indent=2, ensure_ascii=False))
     elif args.command == "workflow":
         from uga.workflows import build_play
 
-        print(json.dumps(build_play(args.requirements, args.output), indent=2, ensure_ascii=False))
+        print(
+            json.dumps(
+                build_play(
+                    args.requirements,
+                    args.output,
+                    backend=args.backend,
+                    approved=args.allow_external_tools,
+                    export_preset=args.export_preset,
+                ),
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
     elif args.command == "rebuild":
         from uga.workflows import reverse_build_play
 
         print(
             json.dumps(
-                reverse_build_play(args.source, args.output, authorized=args.authorized),
+                reverse_build_play(
+                    args.source,
+                    args.output,
+                    authorized=args.authorized,
+                    backend=args.backend,
+                    approved=args.allow_external_tools,
+                    export_preset=args.export_preset,
+                ),
                 indent=2,
                 ensure_ascii=False,
             )
@@ -285,7 +395,13 @@ def _main(argv: list[str] | None = None) -> int:
                 ),
             }
         elif args.command == "godot-play":
-            result = adapter.play(args.project, args.output, approved=args.allow_external_tools)
+            result = adapter.play(
+                args.project,
+                args.output,
+                approved=args.allow_external_tools,
+                seed=args.seed,
+                game_executable=args.game_executable,
+            )
         else:
             result = adapter.export(
                 args.project, args.preset, args.output, approved=args.allow_external_tools

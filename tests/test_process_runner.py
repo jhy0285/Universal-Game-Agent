@@ -22,3 +22,10 @@ def test_owned_python_command_result_timeout_and_output_budget(tmp_path):
         run_tool(
             [sys.executable, "-c", "print('x'*5000)"], tmp_path, approved=True, max_output_bytes=100
         )
+    with pytest.raises(UGAError, match="memory limit"):
+        run_tool(
+            [sys.executable, "-c", "import time; data=bytearray(2000000); time.sleep(1)"],
+            tmp_path,
+            approved=True,
+            max_rss_mb=1,
+        )

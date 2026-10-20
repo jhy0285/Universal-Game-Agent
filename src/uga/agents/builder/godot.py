@@ -19,7 +19,7 @@ class GodotAdapter:
             raise CapabilityUnavailable("Install Godot 4 from its official distribution")
         self.executable = Path(found).resolve()
 
-    def validate(self, project: Path, *, approved=False):
+    def validate(self, project: Path, *, approved=False, heartbeat=None):
         result = run_tool(
             [
                 str(self.executable),
@@ -32,15 +32,21 @@ class GodotAdapter:
             ],
             project,
             approved=approved,
+            driver=heartbeat,
+            max_rss_mb=1024,
         )
         if any(
-            marker in result.output
-            for marker in ("SCRIPT ERROR", "Parse Error", "Failed to load script")
+            marker in result.output for marker in ("ERROR:", "Parse Error", "Failed to load script")
         ):
             raise UGAError("Godot import/parse failed: " + result.output[-4000:])
-        return {"imported": True, "elapsed_s": result.elapsed_s, "log": result.output}
+        return {
+            "imported": True,
+            "elapsed_s": result.elapsed_s,
+            "log": result.output,
+            "engine_resources": result.resources,
+        }
 
-    def smoke(self, project: Path, output: Path, *, approved=False):
+    def smoke(self, project: Path, output: Path, *, approved=False, heartbeat=None):
         output.mkdir(parents=True, exist_ok=True)
         run_id = str(uuid4())
         report = output.resolve() / f"smoke-{run_id}.json"
@@ -55,7 +61,7 @@ class GodotAdapter:
             f"--uga-report={report}",
             f"--uga-run-id={run_id}",
         ]
-        result = run_tool(command, project, approved=approved)
+        result = run_tool(command, project, approved=approved, driver=heartbeat)
         (output / "godot-smoke.log").write_text(result.output, encoding="utf-8")
         if not report.exists():
             raise UGAError("Godot did not produce this run's test result")
@@ -66,22 +72,42 @@ class GodotAdapter:
             or data.get("passed") is not True
         ):
             raise UGAError("Godot smoke checks failed or result identity is stale")
+        data["engine_resources"] = result.resources
         return data
 
-    def play(self, project: Path, output: Path, *, approved=False, timeout_s=60):
+    def play(
+        self,
+        project: Path,
+        output: Path,
+        *,
+        approved=False,
+        timeout_s=60,
+        heartbeat=None,
+        seed: int | None = None,
+        game_executable: Path | None = None,
+    ):
         """Actual engine play via its opt-in truth bridge; not a screenshot benchmark."""
         run_id = str(uuid4())
         bridge = output.resolve() / run_id
         bridge.mkdir(parents=True)
         report = bridge / "report.json"
         metrics = Metrics()
-        policy = RuleBasedPolicy()
+        configuration = project / "arena.json"
+        config = (
+            json.loads(configuration.read_text(encoding="utf-8")) if configuration.is_file() else {}
+        )
+        policy = RuleBasedPolicy(config.get("attack_range", 14))
         last_tick = -1
         sent_at = None
         frames = 0
+        last_progress = time.monotonic()
 
         def drive():
-            nonlocal last_tick, sent_at, frames
+            nonlocal last_tick, sent_at, frames, last_progress
+            if heartbeat:
+                heartbeat()
+            if time.monotonic() - last_progress > 5:
+                raise TimeoutError("Godot gameplay stopped acknowledging actions")
             path = bridge / "state.json"
             if not path.exists():
                 return
@@ -90,6 +116,7 @@ class GodotAdapter:
                 raise UGAError("bridge run identity mismatch")
             if raw["tick"] == last_tick:
                 return
+            last_progress = time.monotonic()
             if sent_at is not None:
                 metrics.observe("engine_round_trip", (time.perf_counter() - sent_at) * 1000)
             last_tick = raw["tick"]
@@ -119,17 +146,23 @@ class GodotAdapter:
             )
             sent_at = time.perf_counter()
 
-        result = run_tool(
+        command = (
+            [str(game_executable.resolve()), "--headless"]
+            if game_executable
+            else [str(self.executable), "--headless", "--path", str(project.resolve())]
+        )
+        command.extend(
             [
-                str(self.executable),
-                "--headless",
-                "--path",
-                str(project.resolve()),
                 "--",
                 f"--uga-bridge={bridge}",
                 f"--uga-report={report}",
                 f"--uga-run-id={run_id}",
-            ],
+            ]
+        )
+        if seed is not None:
+            command.append(f"--uga-seed={int(seed)}")
+        result = run_tool(
+            command,
             project,
             approved=approved,
             timeout_s=timeout_s,
@@ -143,15 +176,18 @@ class GodotAdapter:
             raise UGAError("Godot gameplay did not reach the goal")
         outcome = {
             "backend": "godot-ground-truth-bridge",
+            "exported_game": game_executable is not None,
+            "seed_override": seed,
             "success": True,
             "frames": frames,
             "truth": data,
             "metrics": metrics.summarize(),
+            "engine_resources": result.resources,
         }
         atomic_json(bridge / "evaluation.json", outcome)
         return outcome
 
-    def export(self, project: Path, preset: str, output: Path, *, approved=False):
+    def export(self, project: Path, preset: str, output: Path, *, approved=False, heartbeat=None):
         if preset not in ("Windows Desktop", "Linux"):
             raise ValueError("unsupported export preset")
         output = output.resolve()
@@ -171,7 +207,16 @@ class GodotAdapter:
             project,
             approved=approved,
             timeout_s=180,
+            driver=heartbeat,
+            max_rss_mb=1024,
         )
+        if "ERROR:" in result.output:
+            raise UGAError("Godot export reported errors: " + result.output[-4000:])
         if not output.is_file() or output.stat().st_size == 0:
             raise UGAError("Godot produced no exported game")
-        return {"exported": True, "path": str(output), "log": result.output}
+        return {
+            "exported": True,
+            "path": str(output),
+            "log": result.output,
+            "engine_resources": result.resources,
+        }

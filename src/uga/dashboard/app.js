@@ -18,14 +18,22 @@ document.querySelectorAll("[data-launch]").forEach(button=>button.addEventListen
   try{
     const agent=button.dataset.launch;
     if(agent==="player")await launch(agent,"play",{seed:Number($("seed").value)});
-    if(agent==="builder")await launch(agent,"generate",{requirements:$("requirements").value});
+    if(agent==="builder"){
+      const engine=$("run-godot").checked, preset=$("export-preset").value;
+      if(preset&&!engine)throw new Error("내보내기에는 Godot 실행 허용이 필요합니다.");
+      await launch(agent,engine?"build":"generate",{requirements:$("requirements").value,...(preset?{export_preset:preset}:{})},engine);
+    }
     if(agent==="reverse"){
       if(!$("authorized").checked)throw new Error("분석 대상에 대한 권한 확인이 필요합니다.");
       await launch(agent,"analyze",{path:$("analysis-path").value||"test_games/godot"},true);
     }
   }catch(e){notice(e.message);}finally{button.disabled=false;}
 }));
-$("workflow").onclick=async()=>{try{await launch("workflow","build-play",{requirements:$("requirements").value});}catch(e){notice(e.message);}};
+$("workflow").onclick=async()=>{try{
+  const engine=$("run-godot").checked,preset=$("export-preset").value;
+  if(preset&&!engine)throw new Error("내보내기에는 Godot 실행 허용이 필요합니다.");
+  await launch("workflow","build-play",{requirements:$("requirements").value,backend:engine?"godot":"reference",...(preset?{export_preset:preset}:{})},engine);
+}catch(e){notice(e.message);}};
 $("stop-all").onclick=async()=>{try{await api("stop",{});await refresh();}catch(e){notice(e.message);}};
 $("rollback").onclick=async()=>{try{await api("rollback",{});await refresh();}catch(e){notice(e.message);}};
 function renderJobs(rows){

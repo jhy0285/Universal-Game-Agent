@@ -25,8 +25,20 @@ class BuilderParameters(Contract):
     spec: GameSpec | None = None
 
 
+class BuildParameters(BuilderParameters):
+    export_preset: Literal["Linux", "Windows Desktop"] | None = None
+
+
 class WorkflowParameters(Contract):
     requirements: str = Field(default="2D arena with 3 enemies", min_length=1, max_length=10000)
+    backend: Literal["reference", "godot"] = "reference"
+    export_preset: Literal["Linux", "Windows Desktop"] | None = None
+
+
+class RebuildParameters(Contract):
+    path: str = Field(min_length=1, max_length=4096)
+    backend: Literal["reference", "godot"] = "reference"
+    export_preset: Literal["Linux", "Windows Desktop"] | None = None
 
 
 class ReverseParameters(Contract):
@@ -39,14 +51,28 @@ def validate_task(spec: TaskSpec):
         (AgentKind.PLAYER, "soak"): SoakParameters,
         (AgentKind.REVERSE, "analyze"): ReverseParameters,
         (AgentKind.BUILDER, "generate"): BuilderParameters,
+        (AgentKind.BUILDER, "build"): BuildParameters,
         (AgentKind.WORKFLOW, "build-play"): WorkflowParameters,
+        (AgentKind.WORKFLOW, "reverse-build-play"): RebuildParameters,
     }
     model = contracts.get((spec.agent, spec.operation))
     if model is None:
         raise ValueError("unsupported agent operation")
-    model.model_validate(spec.parameters)
-    if spec.agent == AgentKind.REVERSE and not spec.authorized:
-        raise AuthorizationRequired("Analysis needs explicit ownership/permission confirmation")
+    parameters = model.model_validate(spec.parameters)
+    if (
+        spec.agent == AgentKind.REVERSE
+        or spec.operation in ("build", "reverse-build-play")
+        or getattr(parameters, "backend", "reference") == "godot"
+    ) and not spec.authorized:
+        raise AuthorizationRequired(
+            "Target analysis and external engine execution require explicit authorization"
+        )
+    if (
+        spec.agent == AgentKind.WORKFLOW
+        and parameters.export_preset
+        and parameters.backend != "godot"
+    ):
+        raise ValueError("export requires the godot backend")
 
 
 def execute_task(raw: dict, root: str, analysis_root: str, connection):
@@ -62,6 +88,13 @@ def execute_task(raw: dict, root: str, analysis_root: str, connection):
         if now - last >= 0.2:
             connection.send({"type": "heartbeat", "tick": tick})
             last = now
+
+    def analysis_path(value):
+        candidate = Path(value)
+        path = (candidate if candidate.is_absolute() else Path(analysis_root) / candidate).resolve()
+        if not path.is_relative_to(Path(analysis_root).resolve()):
+            raise AuthorizationRequired("analysis path is outside the allowed root")
+        return path
 
     try:
         validate_task(spec)
@@ -91,23 +124,50 @@ def execute_task(raw: dict, root: str, analysis_root: str, connection):
             from uga.agents.reverse.agent import analyze
 
             p = ReverseParameters.model_validate(spec.parameters)
-            candidate = Path(p.path)
-            path = (
-                candidate if candidate.is_absolute() else Path(analysis_root) / candidate
-            ).resolve()
-            if not path.is_relative_to(Path(analysis_root).resolve()):
-                raise AuthorizationRequired("analysis path is outside the allowed root")
+            path = analysis_path(p.path)
             result = analyze(path, output, authorized=spec.authorized).model_dump(mode="json")
         elif spec.agent == AgentKind.BUILDER:
             from uga.agents.builder.agent import generate, parse_requirements
 
-            p = BuilderParameters.model_validate(spec.parameters)
+            p = (
+                BuildParameters if spec.operation == "build" else BuilderParameters
+            ).model_validate(spec.parameters)
             result = generate(p.spec or parse_requirements(p.requirements), output / "project")
-        else:
-            from uga.workflows import build_play
+            if spec.operation == "build":
+                from uga.agents.builder.pipeline import validate_project
 
-            p = WorkflowParameters.model_validate(spec.parameters)
-            result = build_play(p.requirements, output, heartbeat=heartbeat)
+                result["engine"] = validate_project(
+                    output / "project",
+                    output / "engine",
+                    approved=spec.authorized,
+                    export_preset=p.export_preset,
+                    heartbeat=heartbeat,
+                )
+                result["built"] = "export" in result["engine"]
+        else:
+            from uga.workflows import build_play, reverse_build_play
+
+            if spec.operation == "reverse-build-play":
+                p = RebuildParameters.model_validate(spec.parameters)
+                result = reverse_build_play(
+                    analysis_path(p.path),
+                    output,
+                    authorized=spec.authorized,
+                    heartbeat=heartbeat,
+                    backend=p.backend,
+                    approved=spec.authorized,
+                    export_preset=p.export_preset,
+                )
+            else:
+                p = WorkflowParameters.model_validate(spec.parameters)
+                result = build_play(
+                    p.requirements,
+                    output,
+                    heartbeat=heartbeat,
+                    backend=p.backend,
+                    approved=spec.authorized,
+                    export_preset=p.export_preset,
+                )
         connection.send({"type": "result", "result": result})
     except BaseException as exc:
         connection.send(

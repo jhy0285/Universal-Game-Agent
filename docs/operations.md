@@ -50,6 +50,25 @@ Soak은 실제 벽시계 시간을 사용하고 반복 에피소드 수, 실패,
 이번 실행의 `summary.json`입니다. 미완료 heartbeat를 성공 결과로 간주하지 않습니다.
 16시간 테스트를 지원하는 옵션이 있다는 사실은 16시간 검증 통과를 뜻하지 않습니다.
 
+백그라운드 실행은 다음 명령으로 관리합니다. 같은 경로에서 다시 시작하면 현재 소유한
+프로세스를 재사용합니다. 종료된 실행의 결과는 덮어쓰지 않으므로 새 검사는 새 경로를 씁니다.
+
+```sh
+.venv/bin/uga soak-service start --seconds 57600 --output .uga/long-run-new
+.venv/bin/uga soak-service status --output .uga/long-run-new
+.venv/bin/uga soak-service stop --output .uga/long-run-new
+```
+
+`results/run.json`에는 run ID, PID·생성 시각, 소스 SHA-256과 실제 런타임이 남습니다.
+`milestone-1800s.json` 등은 같은 연속 실행에서 해당 실제 시간이 경과한 후에만 생성됩니다.
+전체 16시간 성공은 16시간 경과와 최종 summary를 요구합니다. RSS 샘플을 무제한으로 보관하지
+않고 peak/워밍업 후 증가량을 누적하며 기본 RSS 512MB·증가량 64MB를 넘으면 실패 처리합니다.
+정상 중지는 취소 파일로 요청하여 취소 summary를 남깁니다. 프로세스가 사라지고 summary가
+없으면 interrupted이며 성공으로 계산하지 않습니다. 백그라운드 프로세스의 새 환경 복원은
+보장되지 않습니다.
+
+실제 Godot 엔진 생성·분석·플레이와 내보내기는 [엔진 검증](engine-validation.md)을 참조하세요.
+
 개선 흐름은 baseline 실행 → 후보 실행 → 동일 조건 비교 → 제안 → 명시적 승인 → 활성 정책
 변경입니다. 기본 후보는 목표 선택을 직선 거리에서 장애물 경로 거리로 바꿉니다. 시드, 게임
 설정, 실행 환경과 harness 해시가 다르면 비교를 거부합니다. 성공률·인식 정확도 하락, 행동 수

@@ -8,6 +8,9 @@ func check(condition: bool, message: String) -> void:
         failures.append(message)
 
 func _initialize() -> void:
+    call_deferred("run_checks")
+
+func run_checks() -> void:
     var arena := Arena.new()
     root.add_child(arena)
     arena.set_physics_process(false)

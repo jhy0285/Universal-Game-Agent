@@ -1,0 +1,124 @@
+{
+  "started_at": "2026-10-20T15:43:34.344096+00:00",
+  "finished_at": "2026-10-20T15:44:00.137037+00:00",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "python": "3.12.14",
+  "engine_sha256": "f64d4ed19fc9df9440321653fcc80df8c6e365ba7b6de0a29e2cfa9fa71bfeb3",
+  "backend": "godot-ground-truth-bridge",
+  "screenshot_perception_tested": false,
+  "smoke": {
+    "checks": 6,
+    "failures": [],
+    "passed": true,
+    "run_id": "6446c367-26cc-46d6-b0e1-7b04f6ef69fb"
+  },
+  "passed": true,
+  "fixed_seed_play": [
+    {
+      "seed": 7,
+      "success": true,
+      "steps": 61,
+      "hp": 100,
+      "frames": 62,
+      "metrics": {
+        "engine_round_trip_p50_ms": 5.249342000752222,
+        "engine_round_trip_p95_ms": 10.543888998654438,
+        "engine_round_trip_p99_ms": 10.65636259954772,
+        "engine_round_trip_mean_ms": 5.775465000028146,
+        "rss_mb": 32.578125,
+        "cpu_seconds": 0.06999999999999995,
+        "cpu_percent": 11.059379913634656
+      }
+    },
+    {
+      "seed": 11,
+      "success": true,
+      "steps": 50,
+      "hp": 100,
+      "frames": 51,
+      "metrics": {
+        "engine_round_trip_p50_ms": 5.233738000242738,
+        "engine_round_trip_p95_ms": 10.9056712981328,
+        "engine_round_trip_p99_ms": 11.313146007851174,
+        "engine_round_trip_mean_ms": 6.11796270000923,
+        "rss_mb": 32.58984375,
+        "cpu_seconds": 0.040000000000000036,
+        "cpu_percent": 6.223879806015414
+      }
+    },
+    {
+      "seed": 19,
+      "success": true,
+      "steps": 56,
+      "hp": 100,
+      "frames": 57,
+      "metrics": {
+        "engine_round_trip_p50_ms": 5.271283000183757,
+        "engine_round_trip_p95_ms": 10.45031350076897,
+        "engine_round_trip_p99_ms": 10.718287900817813,
+        "engine_round_trip_mean_ms": 5.979073982156739,
+        "rss_mb": 32.60546875,
+        "cpu_seconds": 0.08000000000000007,
+        "cpu_percent": 12.191971887685314
+      }
+    },
+    {
+      "seed": 23,
+      "success": true,
+      "steps": 53,
+      "hp": 100,
+      "frames": 54,
+      "metrics": {
+        "engine_round_trip_p50_ms": 5.251291000604397,
+        "engine_round_trip_p95_ms": 10.403827999107307,
+        "engine_round_trip_p99_ms": 10.570889079972401,
+        "engine_round_trip_mean_ms": 5.8581105093356385,
+        "rss_mb": 32.6171875,
+        "cpu_seconds": 0.05999999999999983,
+        "cpu_percent": 9.498064462276403
+      }
+    },
+    {
+      "seed": 31,
+      "success": true,
+      "steps": 58,
+      "hp": 100,
+      "frames": 59,
+      "metrics": {
+        "engine_round_trip_p50_ms": 5.268063499897835,
+        "engine_round_trip_p95_ms": 10.699101897080254,
+        "engine_round_trip_p99_ms": 10.9629620584019,
+        "engine_round_trip_mean_ms": 6.157535396564997,
+        "rss_mb": 32.62890625,
+        "cpu_seconds": 0.08000000000000007,
+        "cpu_percent": 12.53081432971861
+      }
+    }
+  ],
+  "workflows": {
+    "build_reverse_play": {
+      "godot_executed": true,
+      "enemy_count": 2,
+      "success": true
+    },
+    "reverse_build_play": {
+      "godot_executed": true,
+      "enemy_count": 2,
+      "success": true
+    }
+  },
+  "exports": {
+    "Linux": {
+      "sha256": "4c65e32b1e1fc44e163d5a4d41df31cb98e282321e659d03a5accd2763452c42",
+      "size_bytes": 71086824,
+      "runtime_tested": true
+    },
+    "Windows Desktop": {
+      "sha256": "3cd95555ac6f261de449e67f369f7dea66c0deaf49404edf60596c1f2c7b48e3",
+      "size_bytes": 104529624,
+      "runtime_tested": false
+    }
+  },
+  "export_template_sha512": "da606b61c10157844f8300172df374472665f95015495cb1a7cd132c40ede404faa96cc1016a4b9662db9909ddea69632c4948b2cd11163438dad4808881fb68",
+  "command": ".venv/bin/python scripts/validate-godot.py --allow-external-tools --export --output .uga/validation/engine-complete-v1"
+}

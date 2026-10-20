@@ -6,8 +6,10 @@ import pytest
 from uga.agents.builder.agent import generate, parse_requirements
 from uga.agents.builder.godot import GodotAdapter
 from uga.agents.reverse.agent import analyze
+from uga.core.contracts import TaskSpec
 from uga.core.errors import AuthorizationRequired
 from uga.integrations.process import run_tool
+from uga.orchestrator.worker import validate_task
 from uga.workflows import build_play, reverse_build_play
 
 
@@ -77,3 +79,21 @@ def test_reverse_builder_player_preserves_source_configuration(tmp_path):
     result = reverse_build_play(tmp_path / "source", tmp_path / "rebuild", authorized=True)
     assert result["generated"]["spec"]["combat"]["enemies"] == 2
     assert result["reference_player"]["success"] and not result["godot_executed"]
+
+
+def test_engine_workflow_requires_approval_before_generation(tmp_path):
+    with pytest.raises(AuthorizationRequired):
+        build_play("2 enemies", tmp_path / "denied", backend="godot")
+    assert not (tmp_path / "denied").exists()
+    with pytest.raises(ValueError, match="export requires"):
+        build_play("arena", tmp_path / "denied", export_preset="Linux")
+    for agent, operation, parameters in (
+        ("builder", "build", {}),
+        ("workflow", "build-play", {"backend": "godot"}),
+        ("workflow", "reverse-build-play", {"path": "test_games/godot"}),
+    ):
+        task = TaskSpec(agent=agent, operation=operation, parameters=parameters)
+        with pytest.raises(AuthorizationRequired):
+            validate_task(task)
+        task.authorized = True
+        validate_task(task)

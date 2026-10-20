@@ -80,6 +80,18 @@ def _main(argv: list[str] | None = None) -> int:
     reverse.add_argument("path", type=Path)
     reverse.add_argument("--authorized", action="store_true")
     reverse.add_argument("--output", type=Path, default=Path(".uga/reverse"))
+    reverse_tool = commands.add_parser(
+        "reverse-tool", help="Explicit JADX/Ghidra analysis of a trusted authorized sample"
+    )
+    reverse_tool.add_argument("tool", choices=["jadx", "ghidra"])
+    reverse_tool.add_argument("path", type=Path)
+    reverse_tool.add_argument("--output", type=Path, required=True)
+    reverse_tool.add_argument("--authorized", action="store_true")
+    reverse_tool.add_argument("--trusted-input", action="store_true")
+    reverse_tool.add_argument("--allow-external-tools", action="store_true")
+    reverse_tool.add_argument("--executable", type=Path)
+    reverse_tool.add_argument("--java", type=Path)
+    reverse_tool.add_argument("--installation", type=Path)
     workflow = commands.add_parser("workflow", help="Generate → static analysis → reference Player")
     workflow.add_argument("--requirements", default="2D arena with 3 enemies")
     workflow.add_argument("--output", type=Path, required=True)
@@ -281,6 +293,21 @@ def _main(argv: list[str] | None = None) -> int:
         from uga.agents.reverse.agent import analyze
 
         print(analyze(args.path, args.output, authorized=args.authorized).model_dump_json(indent=2))
+    elif args.command == "reverse-tool":
+        from uga.agents.reverse.tool_analysis import analyze_with_tool
+
+        result = analyze_with_tool(
+            args.tool,
+            args.path,
+            args.output,
+            approved=args.allow_external_tools,
+            authorized=args.authorized,
+            trusted_input=args.trusted_input,
+            executable=args.executable,
+            java=args.java,
+            installation=args.installation,
+        )
+        print(result.model_dump_json(indent=2))
     elif args.command in ("builder-edit", "builder-repair"):
         from uga.agents.builder.revision import PatchPlan, repair_project, revise_project
 

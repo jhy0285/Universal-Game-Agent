@@ -55,6 +55,7 @@ class JadxAdapter:
             output.parent,
             approved=approved,
             timeout_s=120,
+            max_rss_mb=2048,
         )
         sources = list((output / "sources").rglob("*.java"))
         if not sources:
@@ -107,10 +108,13 @@ class GhidraAdapter:
             ],
             output,
             approved=approved,
-            timeout_s=120,
+            timeout_s=180,
+            max_rss_mb=4096,
         )
         if not report.exists():
             raise UGAError("Ghidra did not produce function evidence")
+        if report.stat().st_size > 16_000_000:
+            raise UGAError("Ghidra function evidence exceeds 16 MB")
         data = json.loads(report.read_text(encoding="utf-8"))
         if not isinstance(data.get("functions"), list):
             raise UGAError("invalid Ghidra export")

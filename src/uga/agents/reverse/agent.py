@@ -148,10 +148,16 @@ def analyze(path: Path, output: Path, *, authorized: bool = False) -> GameSpec:
             functions = []
             calls = []
             for number, line in enumerate(text.splitlines(), 1):
-                c = re.search(r"^\s*(?:class_name|class)\s+(\w+)", line)
-                f = re.search(
-                    r"^\s*(?:func|def|(?:public|private|protected)\s+\w+)\s+(\w+)\s*\(", line
+                c = re.search(
+                    r"^\s*(?:(?:public|private|protected|static|final|abstract|sealed|partial)\s+)*(?:class_name|class|interface|enum|record)\s+(\w+)",
+                    line,
                 )
+                f = re.search(r"^\s*(?:async\s+)?(?:func|def)\s+(\w+)\s*\(", line)
+                if f is None and source.suffix.lower() in (".java", ".cs"):
+                    f = re.search(
+                        r"^\s*(?:(?:public|private|protected|static|final|abstract|synchronized|virtual|override|async|native)\s+)+(?:[\w.<>,?\[\]]+\s+)+(\w+)\s*\(",
+                        line,
+                    )
                 if c:
                     classes.append({"name": c.group(1), "line": number})
                 if f:

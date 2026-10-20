@@ -2,7 +2,7 @@ import json
 import math
 from typing import Protocol
 
-from uga.agents.player.navigation import next_waypoint
+from uga.agents.player.navigation import next_waypoint, route_distance
 from uga.core.contracts import Action, ActionDecision, GameState
 from uga.core.errors import CapabilityUnavailable
 
@@ -41,24 +41,45 @@ class SafeFallbackPolicy:
 
 
 class RuleBasedPolicy:
-    def __init__(self, attack_range: float = 14):
+    def __init__(self, attack_range: float = 14, navigation_mode: str = "euclidean"):
+        if not math.isfinite(attack_range) or not 1 <= attack_range <= 20:
+            raise ValueError("attack range must be finite and in [1,20]")
         self.attack_range = attack_range
+        if navigation_mode not in ("euclidean", "geodesic"):
+            raise ValueError("unsupported navigation mode")
+        self.navigation_mode = navigation_mode
+        self._target_key = self._target = None
 
-    def decide(self, state):
+    def decide(self, state, strategy=None):
         if not safe_state(state):
             return SafeFallbackPolicy().decide(state)
         if state.goal_complete and state.goal_complete.value:
             return decision(state, reason="goal complete", policy="rule", confidence=1)
+        if strategy == "stop":
+            return decision(state, reason="strategic human handoff", policy="rule", confidence=1)
         p = state.player_position.value
         start = (p.x, p.y)
         healing = bool(
-            state.hp and state.hp.value is not None and state.hp.value < 60 and state.items
+            state.hp
+            and state.hp.value is not None
+            and (state.hp.value < 60 or strategy == "heal")
+            and state.items
         )
         candidates = state.items if healing else state.enemies
         targets = [d.value for d in candidates if d.value is not None and d.confidence >= 0.9]
         if not targets:
             return decision(state, reason="no reliable target", policy="rule")
-        target = min(targets, key=lambda t: math.dist(start, (t.x, t.y)))
+        if self.navigation_mode == "geodesic":
+            # Re-rank after world/target changes, not every control tick.
+            key = (healing, tuple((t.x, t.y) for t in targets), tuple(state.obstacles))
+            if key != self._target_key:
+                self._target = min(
+                    targets, key=lambda t: route_distance(start, (t.x, t.y), state.obstacles)
+                )
+                self._target_key = key
+            target = self._target
+        else:
+            target = min(targets, key=lambda t: math.dist(start, (t.x, t.y)))
         distance = math.dist(start, (target.x, target.y))
         if distance <= (10 if healing else self.attack_range):
             return decision(

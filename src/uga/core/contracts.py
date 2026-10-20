@@ -34,7 +34,9 @@ class TaskStatus(StrEnum):
 
 
 class TaskSpec(Contract):
-    task_id: str = Field(default_factory=lambda: str(uuid4()))
+    task_id: str = Field(
+        default_factory=lambda: str(uuid4()), pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+    )
     agent: AgentKind
     operation: str = Field(min_length=1, max_length=80)
     parameters: dict[str, JsonValue] = Field(default_factory=dict)

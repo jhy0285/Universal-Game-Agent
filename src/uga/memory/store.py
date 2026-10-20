@@ -119,16 +119,48 @@ class Store:
         return [{"sequence": r["sequence"], **json.loads(r["payload"])} for r in rows]
 
     def checkpoint(self, name: str, value: dict):
+        self.checkpoints({name: value})
+
+    def checkpoints(self, values: dict[str, dict]):
         with self.connect() as db:
-            db.execute(
+            db.executemany(
                 "INSERT INTO checkpoints VALUES (?,?,?) ON CONFLICT(name) DO UPDATE SET payload=excluded.payload,updated=excluded.updated",
-                (name, json.dumps(value, allow_nan=False), utcnow().isoformat()),
+                [
+                    (name, json.dumps(value, allow_nan=False), utcnow().isoformat())
+                    for name, value in values.items()
+                ],
             )
 
     def load_checkpoint(self, name: str) -> dict | None:
         with self.connect() as db:
             row = db.execute("SELECT payload FROM checkpoints WHERE name=?", (name,)).fetchone()
         return json.loads(row["payload"]) if row else None
+
+    def list_checkpoints(self, prefix: str, limit: int = 100):
+        with self.connect() as db:
+            rows = db.execute(
+                "SELECT name,payload FROM checkpoints WHERE substr(name,1,?)=? ORDER BY updated DESC LIMIT ?",
+                (len(prefix), prefix, limit),
+            ).fetchall()
+        return [{"name": row["name"], "value": json.loads(row["payload"])} for row in rows]
+
+    def atomic_checkpoints(self, transform):
+        """Serialize a state transition with its reads, including competing CLI/API clients."""
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+
+            def read(name):
+                row = db.execute("SELECT payload FROM checkpoints WHERE name=?", (name,)).fetchone()
+                return json.loads(row["payload"]) if row else None
+
+            updates = transform(read)
+            db.executemany(
+                "INSERT INTO checkpoints VALUES (?,?,?) ON CONFLICT(name) DO UPDATE SET payload=excluded.payload,updated=excluded.updated",
+                [
+                    (name, json.dumps(value, allow_nan=False), utcnow().isoformat())
+                    for name, value in updates.items()
+                ],
+            )
 
     def put_artifact(
         self, data: bytes, media_type="application/octet-stream", suffix="bin"

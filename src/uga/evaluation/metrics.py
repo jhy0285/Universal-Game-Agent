@@ -1,5 +1,6 @@
 import math
 import statistics
+import time
 from collections import defaultdict
 
 import psutil
@@ -19,6 +20,7 @@ class Metrics:
         self.samples = defaultdict(list)
         self.process = psutil.Process()
         self.start_cpu = sum(self.process.cpu_times()[:2])
+        self.started = time.perf_counter()
 
     def observe(self, name: str, milliseconds: float):
         self.samples[name].append(milliseconds)
@@ -31,4 +33,7 @@ class Metrics:
             result[f"{name}_mean_ms"] = statistics.mean(values)
         result["rss_mb"] = self.process.memory_info().rss / 2**20
         result["cpu_seconds"] = sum(self.process.cpu_times()[:2]) - self.start_cpu
+        result["cpu_percent"] = (
+            result["cpu_seconds"] / max(time.perf_counter() - self.started, 1e-6) * 100
+        )
         return result

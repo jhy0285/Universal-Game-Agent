@@ -123,3 +123,45 @@ class ReferenceArena:
             "won": self.won,
             "auth_required": self.auth_required,
         }
+
+    def checkpoint(self) -> dict:
+        return {
+            "version": "arena-v1",
+            "config": self.config.model_dump(mode="json"),
+            "player": list(self.player),
+            "enemies": [list(p) for p in self.enemies],
+            "items": [list(p) for p in self.items],
+            "hp": self.hp,
+            "tick": self.tick,
+            "auth_required": self.auth_required,
+        }
+
+    @classmethod
+    def restore(cls, value: dict):
+        if value.get("version") != "arena-v1":
+            raise ValueError("unsupported checkpoint version")
+        game = cls(ArenaConfig.model_validate(value["config"]))
+        for key in ("player", "enemies", "items"):
+            points = [value[key]] if key == "player" else value[key]
+            if not isinstance(points, list) or len(points) > 8:
+                raise ValueError("invalid checkpoint positions")
+            if not all(
+                isinstance(p, list)
+                and len(p) == 2
+                and all(isinstance(v, int) for v in p)
+                and 4 <= p[0] <= 156
+                and 16 <= p[1] <= 108
+                for p in points
+            ):
+                raise ValueError("checkpoint positions outside arena")
+            setattr(
+                game, key, list(value[key]) if key == "player" else [list(p) for p in value[key]]
+            )
+        if not isinstance(value["hp"], int) or not 0 <= value["hp"] <= 100:
+            raise ValueError("invalid checkpoint HP")
+        if not isinstance(value["tick"], int) or not 0 <= value["tick"] < game.config.max_steps:
+            raise ValueError("invalid checkpoint tick")
+        if not isinstance(value["auth_required"], bool):
+            raise ValueError("invalid checkpoint authentication state")
+        game.hp, game.tick, game.auth_required = value["hp"], value["tick"], value["auth_required"]
+        return game

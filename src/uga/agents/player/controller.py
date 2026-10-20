@@ -3,9 +3,19 @@ import threading
 import time
 from pathlib import Path
 
+from pydantic import Field
+
 from uga.agents.player.policies import safe_state
-from uga.core.contracts import Action, ActionDecision, GameState, utcnow
+from uga.core.contracts import Action, ActionDecision, Contract, GameState, utcnow
 from uga.core.errors import AuthorizationRequired, CapabilityUnavailable, SafetyStop
+
+
+class MouseDecision(Contract):
+    x: int
+    y: int
+    button: str = Field(default="left", pattern=r"^(left|right)$")
+    duration_s: float = Field(default=0.05, gt=0, le=0.25)
+    based_on_frame: int = Field(ge=0)
 
 
 class GuardedController:
@@ -19,16 +29,30 @@ class GuardedController:
         self.stop_event = threading.Event()
         self._lock = threading.RLock()
         self._held = set()
+        self._held_mouse = set()
 
     @classmethod
     def from_config(cls, backend, path: Path, **kwargs):
         return cls(backend, json.loads(path.read_text(encoding="utf-8"))["actions"], **kwargs)
 
     def release_all(self):
+        failures = []
         with self._lock:
             for key in list(self._held):
-                self.backend.key_up(key)
-                self._held.discard(key)
+                try:
+                    self.backend.key_up(key)
+                    self._held.discard(key)
+                except Exception as exc:
+                    failures.append(str(exc))
+            for button in list(self._held_mouse):
+                try:
+                    self.backend.mouse_up(button)
+                    self._held_mouse.discard(button)
+                except Exception as exc:
+                    failures.append(str(exc))
+        if failures:
+            self.stop_event.set()
+            raise SafetyStop("input release failed: " + "; ".join(failures))
 
     def emergency_stop(self):
         self.stop_event.set()
@@ -63,6 +87,36 @@ class GuardedController:
                     or not self.backend.is_target_focused()
                 ):
                     raise SafetyStop("interrupted input")
+            return True
+        finally:
+            self.release_all()
+
+    def perform_mouse(self, action: MouseDecision, state: GameState):
+        # Reuse the exact state/focus/age gate before moving the pointer.
+        self.perform(
+            ActionDecision(
+                reason="validate mouse scope",
+                policy="mouse-guard",
+                based_on_frame=action.based_on_frame,
+            ),
+            state,
+        )
+        if not self.backend.is_point_in_target(action.x, action.y):
+            raise SafetyStop("mouse coordinates are outside the authorized client area")
+        try:
+            with self._lock:
+                if self.stop_event.is_set():
+                    raise SafetyStop("emergency stop")
+                self.backend.move_mouse(action.x, action.y)
+                self._held_mouse.add(action.button)
+                self.backend.mouse_down(action.button)
+            deadline = time.monotonic() + action.duration_s
+            while time.monotonic() < deadline:
+                if (
+                    self.stop_event.wait(min(0.01, max(0, deadline - time.monotonic())))
+                    or not self.backend.is_target_focused()
+                ):
+                    raise SafetyStop("interrupted mouse input")
             return True
         finally:
             self.release_all()
@@ -125,11 +179,14 @@ class WindowsInputBackend:
             _anonymous_ = ("value",)
             _fields_ = [("type", w.DWORD), ("value", Union)]
 
-        self.Input, self.Keyboard = Input, Keyboard
+        self.Input, self.Keyboard, self.Mouse = Input, Keyboard, Mouse
         self.user32.SendInput.argtypes = [w.UINT, ctypes.POINTER(Input), ctypes.c_int]
         self.user32.SendInput.restype = w.UINT
         self.user32.GetForegroundWindow.restype = w.HWND
         self.user32.GetWindowThreadProcessId.argtypes = [w.HWND, ctypes.POINTER(w.DWORD)]
+        self.user32.GetClientRect.argtypes = [w.HWND, ctypes.POINTER(w.RECT)]
+        self.user32.ClientToScreen.argtypes = [w.HWND, ctypes.POINTER(w.POINT)]
+        self.user32.SetCursorPos.argtypes = [ctypes.c_int, ctypes.c_int]
 
     def is_target_focused(self):
         pid = self.w.DWORD()
@@ -152,3 +209,40 @@ class WindowsInputBackend:
 
     def key_up(self, key):
         self._key(key, True)
+
+    def is_point_in_target(self, x, y):
+        if not self.is_target_focused():
+            return False
+        window = self.user32.GetForegroundWindow()
+        rectangle = self.w.RECT()
+        origin = self.w.POINT(0, 0)
+        if not self.user32.GetClientRect(
+            window, self.ctypes.byref(rectangle)
+        ) or not self.user32.ClientToScreen(window, self.ctypes.byref(origin)):
+            return False
+        return (
+            origin.x <= x < origin.x + rectangle.right
+            and origin.y <= y < origin.y + rectangle.bottom
+        )
+
+    def move_mouse(self, x, y):
+        if not self.is_point_in_target(x, y):
+            raise SafetyStop("mouse point is outside authorized window")
+        if not self.user32.SetCursorPos(x, y):
+            raise OSError("SetCursorPos failed")
+
+    def _mouse(self, button, up):
+        flags = {"left": (2, 4), "right": (8, 16)}
+        if button not in flags:
+            raise SafetyStop("mouse button is not allowlisted")
+        if not up and not self.is_target_focused():
+            raise SafetyStop("target lost focus")
+        event = self.Input(type=0, mi=self.Mouse(0, 0, 0, flags[button][int(up)], 0, 0))
+        if self.user32.SendInput(1, self.ctypes.byref(event), self.ctypes.sizeof(event)) != 1:
+            raise OSError(self.ctypes.get_last_error(), "mouse SendInput failed")
+
+    def mouse_down(self, button):
+        self._mouse(button, False)
+
+    def mouse_up(self, button):
+        self._mouse(button, True)

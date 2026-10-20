@@ -54,6 +54,9 @@ class PixelPerception:
 
     def analyze(self, frame: Frame) -> GameState:
         image = frame.image.convert("RGB")
+        factor = image.width // 160
+        if 1 < factor <= 8 and image.size == (160 * factor, 112 * factor):
+            image = image.resize((160, 112), Image.Resampling.NEAREST)
         state = GameState(
             frame_id=frame.frame_id,
             captured_at=frame.captured_at,

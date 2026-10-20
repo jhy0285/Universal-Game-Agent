@@ -35,6 +35,7 @@ def run_soak(duration_s: float, output: Path, cancel=None, heartbeat=None):
                 ArenaConfig(seed=(7, 11, 19, 23, 31)[episodes % 5]),
                 cancel=cancel,
                 heartbeat=heartbeat,
+                preview_path=output / "last-frame.png",
             )
             if result.stop_reason == "cancelled":
                 break

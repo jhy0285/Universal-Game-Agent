@@ -2,7 +2,7 @@ import heapq
 import math
 
 
-def next_waypoint(start: tuple, goal: tuple, obstacles: list, cell: int = 4) -> tuple | None:
+def route(start: tuple, goal: tuple, obstacles: list, cell: int = 4) -> tuple | None:
     """A* on the test arena with inflated walls and a deterministic tie break."""
     origin = (round(start[0] / cell), round(start[1] / cell))
     target = (round(goal[0] / cell), round(goal[1] / cell))
@@ -27,7 +27,7 @@ def next_waypoint(start: tuple, goal: tuple, obstacles: list, cell: int = 4) -> 
             while path[-1] in came:
                 path.append(came[path[-1]])
             p = path[-2] if len(path) > 1 else path[0]
-            return (p[0] * cell, p[1] * cell)
+            return (p[0] * cell, p[1] * cell), (len(path) - 1) * cell
         for p in (
             (current[0] - 1, current[1]),
             (current[0] + 1, current[1]),
@@ -40,3 +40,13 @@ def next_waypoint(start: tuple, goal: tuple, obstacles: list, cell: int = 4) -> 
                 came[p] = current
                 heapq.heappush(queue, (new + abs(target[0] - p[0]) + abs(target[1] - p[1]), p))
     return None
+
+
+def next_waypoint(start, goal, obstacles, cell=4):
+    result = route(start, goal, obstacles, cell)
+    return result[0] if result is not None else None
+
+
+def route_distance(start, goal, obstacles, cell=4):
+    result = route(start, goal, obstacles, cell)
+    return result[1] if result is not None else math.inf

@@ -14,6 +14,8 @@ var bridge: String = ""
 var report_path: String = ""
 var run_id: String = ""
 var elapsed: float = 0.0
+var render_sync: bool = false
+var publishing: bool = false
 
 func _ready() -> void:
     var config: Dictionary = {}
@@ -22,6 +24,8 @@ func _ready() -> void:
         if decoded is Dictionary:
             config = decoded
     for arg in OS.get_cmdline_user_args():
+        if arg == "--uga-render-sync":
+            render_sync = true
         if arg.begins_with("--uga-seed="):
             config["seed"] = int(arg.trim_prefix("--uga-seed="))
         if arg.begins_with("--uga-bridge="):
@@ -32,6 +36,8 @@ func _ready() -> void:
             run_id = arg.trim_prefix("--uga-run-id=")
     setup(config)
     if not bridge.is_empty():
+        if render_sync:
+            await RenderingServer.frame_post_draw
         publish_state()
 
 func setup(config: Dictionary) -> void:
@@ -129,16 +135,25 @@ func publish_state() -> void:
     write_json(bridge.path_join("state.json"), snapshot())
 
 func _process(_delta: float) -> void:
-    if bridge.is_empty():
+    if bridge.is_empty() or publishing:
         return
     var action_path: String = bridge.path_join("action.json")
     if FileAccess.file_exists(action_path) and FileAccess.get_file_as_string(action_path).length() < 65536:
         var message: Variant = JSON.parse_string(FileAccess.get_file_as_string(action_path))
         if message is Dictionary and message.get("run_id") == run_id and int(message.get("frame", -1)) == tick:
             var action: String = str(message.get("action", "wait"))
+            if render_sync and done() and action == "finish":
+                if not report_path.is_empty():
+                    write_json(report_path, snapshot())
+                get_tree().quit(0 if won() else 2)
+                return
+            publishing = true
             step(action)
+            if render_sync:
+                await RenderingServer.frame_post_draw
             publish_state()
-            if done() or auth_required:
+            publishing = false
+            if (done() or auth_required) and not render_sync:
                 if not report_path.is_empty():
                     write_json(report_path, snapshot())
                 get_tree().quit(0 if won() else 2)

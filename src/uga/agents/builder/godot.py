@@ -4,12 +4,32 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
-from uga.agents.player.policies import RuleBasedPolicy
+from uga.agents.player.perception import Frame, PixelPerception
+from uga.agents.player.policies import RuleBasedPolicy, safe_state
+from uga.agents.player.verification import verify_effect
 from uga.core.contracts import Detection, GameState, Point, utcnow
 from uga.core.errors import CapabilityUnavailable, SafetyStop, UGAError
 from uga.evaluation.metrics import Metrics
 from uga.integrations.process import run_tool
 from uga.memory.store import atomic_json
+
+
+def _truth_state(raw):
+    def detected(value):
+        return Detection(value=value, confidence=1, source="godot-test-ground-truth/v1")
+
+    return GameState(
+        frame_id=raw["tick"],
+        captured_at=utcnow(),
+        player_position=detected(Point(x=raw["player"][0], y=raw["player"][1])),
+        hp=detected(float(raw["hp"])),
+        enemies=[detected(Point(x=p[0], y=p[1])) for p in raw["enemies"]],
+        items=[detected(Point(x=p[0], y=p[1])) for p in raw["items"]],
+        obstacles=raw["obstacles"],
+        ui_state="authentication" if raw["auth_required"] else "gameplay",
+        auth_required=detected(raw["auth_required"]),
+        goal_complete=detected(raw["won"]),
+    )
 
 
 class GodotAdapter:
@@ -85,8 +105,9 @@ class GodotAdapter:
         heartbeat=None,
         seed: int | None = None,
         game_executable: Path | None = None,
+        capture=None,
     ):
-        """Actual engine play via its opt-in truth bridge; not a screenshot benchmark."""
+        """Explicit engine truth control or MSS pixel perception with test-game input."""
         run_id = str(uuid4())
         bridge = output.resolve() / run_id
         bridge.mkdir(parents=True)
@@ -100,10 +121,14 @@ class GodotAdapter:
         last_tick = -1
         sent_at = None
         frames = 0
+        perception = PixelPerception() if capture else None
+        correct = total = effects = 0
+        previous_state = previous_action = None
         last_progress = time.monotonic()
 
         def drive():
             nonlocal last_tick, sent_at, frames, last_progress
+            nonlocal correct, total, effects, previous_state, previous_action
             if heartbeat:
                 heartbeat()
             if time.monotonic() - last_progress > 5:
@@ -121,36 +146,73 @@ class GodotAdapter:
                 metrics.observe("engine_round_trip", (time.perf_counter() - sent_at) * 1000)
             last_tick = raw["tick"]
             frames += 1
-
-            def detected(value):
-                return Detection(value=value, confidence=1, source="godot-test-ground-truth/v1")
-
-            state = GameState(
-                frame_id=raw["tick"],
-                captured_at=utcnow(),
-                player_position=detected(Point(x=raw["player"][0], y=raw["player"][1])),
-                hp=detected(float(raw["hp"])),
-                enemies=[detected(Point(x=p[0], y=p[1])) for p in raw["enemies"]],
-                items=[detected(Point(x=p[0], y=p[1])) for p in raw["items"]],
-                obstacles=raw["obstacles"],
-                ui_state="authentication" if raw["auth_required"] else "gameplay",
-                auth_required=detected(raw["auth_required"]),
-                goal_complete=detected(raw["won"]),
-            )
+            frame_begin = time.perf_counter()
+            if capture:
+                begin = time.perf_counter()
+                captured = capture.capture()
+                metrics.observe("capture", (time.perf_counter() - begin) * 1000)
+                begin = time.perf_counter()
+                state = perception.analyze(Frame(captured.image, raw["tick"], captured.captured_at))
+                metrics.observe("perception", (time.perf_counter() - begin) * 1000)
+                temporary = bridge / "last-frame.tmp"
+                captured.image.save(temporary, format="PNG")
+                temporary.replace(bridge / "last-frame.png")
+                checks = [
+                    state.hp is not None and state.hp.value == raw["hp"],
+                    len(state.enemies) == len(raw["enemies"]),
+                    state.player_position is not None
+                    and state.player_position.value is not None
+                    and [state.player_position.value.x, state.player_position.value.y]
+                    == raw["player"],
+                ]
+                correct += sum(checks)
+                total += len(checks)
+                if previous_state is not None:
+                    effects += verify_effect(previous_state, state, previous_action) is True
+                if not safe_state(state):
+                    raise SafetyStop("Rendered frame is unknown or requires human handoff")
+                if raw["done"]:
+                    atomic_json(
+                        bridge / "action.json",
+                        {"run_id": run_id, "frame": last_tick, "action": "finish"},
+                    )
+                    return
+            else:
+                state = _truth_state(raw)
             if raw["auth_required"]:
                 raise SafetyStop("Godot requested human handoff")
+            begin = time.perf_counter()
             action = policy.decide(state)
+            metrics.observe("decision", (time.perf_counter() - begin) * 1000)
+            previous_state, previous_action = state, action.action
+            begin = time.perf_counter()
             atomic_json(
                 bridge / "action.json",
                 {"run_id": run_id, "frame": last_tick, "action": action.action.value},
             )
+            metrics.observe("control", (time.perf_counter() - begin) * 1000)
             sent_at = time.perf_counter()
+            if capture:
+                metrics.observe("end_to_end", (sent_at - frame_begin) * 1000)
+                with (bridge / "trace.jsonl").open("a", encoding="utf-8") as trace:
+                    trace.write(
+                        json.dumps(
+                            {
+                                "state": state.model_dump(mode="json"),
+                                "decision": action.model_dump(mode="json"),
+                            }
+                        )
+                        + "\n"
+                    )
 
-        command = (
-            [str(game_executable.resolve()), "--headless"]
-            if game_executable
-            else [str(self.executable), "--headless", "--path", str(project.resolve())]
+        command = [str(game_executable.resolve()) if game_executable else str(self.executable)]
+        command.extend(
+            ["--resolution", "640x448", "--position", "0,0", "--audio-driver", "Dummy"]
+            if capture
+            else ["--headless"]
         )
+        if not game_executable:
+            command.extend(["--path", str(project.resolve())])
         command.extend(
             [
                 "--",
@@ -161,6 +223,8 @@ class GodotAdapter:
         )
         if seed is not None:
             command.append(f"--uga-seed={int(seed)}")
+        if capture:
+            command.append("--uga-render-sync")
         result = run_tool(
             command,
             project,
@@ -175,7 +239,7 @@ class GodotAdapter:
         if data.get("run_id") != run_id or data.get("won") is not True or frames < 2:
             raise UGAError("Godot gameplay did not reach the goal")
         outcome = {
-            "backend": "godot-ground-truth-bridge",
+            "backend": "godot-mss-pixels" if capture else "godot-ground-truth-bridge",
             "exported_game": game_executable is not None,
             "seed_override": seed,
             "success": True,
@@ -184,6 +248,9 @@ class GodotAdapter:
             "metrics": metrics.summarize(),
             "engine_resources": result.resources,
         }
+        if capture:
+            outcome["perception_accuracy"] = correct / total if total else 0
+            outcome["verified_effects"] = effects
         atomic_json(bridge / "evaluation.json", outcome)
         return outcome
 

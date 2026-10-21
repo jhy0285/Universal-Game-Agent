@@ -183,9 +183,13 @@ class WindowsInputBackend:
         self.user32.SendInput.argtypes = [w.UINT, ctypes.POINTER(Input), ctypes.c_int]
         self.user32.SendInput.restype = w.UINT
         self.user32.GetForegroundWindow.restype = w.HWND
+        self.user32.GetForegroundWindow.argtypes = []
         self.user32.GetWindowThreadProcessId.argtypes = [w.HWND, ctypes.POINTER(w.DWORD)]
+        self.user32.GetWindowThreadProcessId.restype = w.DWORD
         self.user32.GetClientRect.argtypes = [w.HWND, ctypes.POINTER(w.RECT)]
+        self.user32.GetClientRect.restype = w.BOOL
         self.user32.ClientToScreen.argtypes = [w.HWND, ctypes.POINTER(w.POINT)]
+        self.user32.ClientToScreen.restype = w.BOOL
         self.user32.SetCursorPos.argtypes = [ctypes.c_int, ctypes.c_int]
 
     def is_target_focused(self):
@@ -194,6 +198,23 @@ class WindowsInputBackend:
             self.user32.GetForegroundWindow(), self.ctypes.byref(pid)
         )
         return pid.value == self.pid
+
+    def client_region(self):
+        """Physical client bounds, after MSS has initialized Windows DPI awareness."""
+        window = self.user32.GetForegroundWindow()
+        pid = self.w.DWORD()
+        self.user32.GetWindowThreadProcessId(window, self.ctypes.byref(pid))
+        if not window or pid.value != self.pid:
+            raise SafetyStop("Focus the authorized game window before capturing")
+        rectangle, origin = self.w.RECT(), self.w.POINT(0, 0)
+        if not self.user32.GetClientRect(
+            window, self.ctypes.byref(rectangle)
+        ) or not self.user32.ClientToScreen(window, self.ctypes.byref(origin)):
+            raise OSError(self.ctypes.get_last_error(), "Cannot read game client bounds")
+        width, height = rectangle.right - rectangle.left, rectangle.bottom - rectangle.top
+        if width <= 0 or height <= 0 or not self.is_target_focused():
+            raise SafetyStop("Game window has no visible client area or lost focus")
+        return {"left": origin.x, "top": origin.y, "width": width, "height": height}
 
     def _key(self, key, up):
         if key not in self.VK:

@@ -2,10 +2,69 @@ import json
 import time
 from pathlib import Path
 
+from uga.agents.player.policies import safe_state
 from uga.agents.player.verification import verify_effect
 from uga.core.errors import SafetyStop
 from uga.evaluation.metrics import Metrics
 from uga.memory.store import atomic_json
+
+
+def desktop_region(backend, requested=None):
+    client = backend.client_region()
+    if requested is None:
+        return client
+    if (
+        not all(type(requested.get(k)) is int for k in ("left", "top", "width", "height"))
+        or requested["width"] <= 0
+        or requested["height"] <= 0
+        or requested["left"] < client["left"]
+        or requested["top"] < client["top"]
+        or requested["left"] + requested["width"] > client["left"] + client["width"]
+        or requested["top"] + requested["height"] > client["top"] + client["height"]
+    ):
+        raise SafetyStop("Capture region must be inside the authorized game client area")
+    return dict(requested)
+
+
+def check_desktop(capture, perception, output: Path):
+    """Capture one frame and report readiness without constructing an input controller."""
+    try:
+        output.mkdir(parents=True, exist_ok=False)
+        frame = capture.capture()
+        state = perception.analyze(frame)
+        ready = (
+            safe_state(state)
+            and state.hp is not None
+            and state.hp.value is not None
+            and state.hp.value > 0
+            and state.goal_complete is not None
+            and state.goal_complete.value is False
+        )
+        reason = (
+            "ready"
+            if ready
+            else "human_handoff"
+            if state.auth_required and state.auth_required.value
+            else "goal_complete_restart_game"
+            if state.goal_complete and state.goal_complete.value
+            else "unsupported_or_unready_frame"
+        )
+        frame.image.save(output / "preview.png")
+        atomic_json(output / "state.json", state.model_dump(mode="json"))
+        result = {
+            "backend": "desktop-preflight",
+            "passed": bool(ready),
+            "ready_for_input": bool(ready),
+            "input_sent": False,
+            "reason": reason,
+            "frame_size": list(frame.image.size),
+            "capture_region": getattr(capture, "region", None),
+            "profile": state.map_id.value if state.map_id else None,
+        }
+        atomic_json(output / "result.json", result)
+        return result
+    finally:
+        capture.close()
 
 
 def run_desktop(

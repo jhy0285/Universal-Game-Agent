@@ -26,6 +26,8 @@ bash scripts/setup-cloud.sh
 .venv/bin/uga service status
 ```
 
+Windows에서 처음 실행하는 경우 [단계별 로컬 테스트](docs/windows-testing.md)를 먼저 보세요.
+
 Windows 11 / PowerShell (Python 3.11과 uv가 설치된 경우):
 
 ```powershell

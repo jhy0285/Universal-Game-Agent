@@ -1,5 +1,6 @@
 import hashlib
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -109,9 +110,7 @@ class PixelPerception:
 
 
 class MSSCapture:
-    def __init__(self, region: dict[str, int]):
-        if not all(region.get(k, 0) > 0 for k in ("width", "height")):
-            raise ValueError("capture region needs positive width/height")
+    def __init__(self, region: dict[str, int] | Callable[[], dict[str, int]]):
         try:
             import mss
         except ImportError as exc:
@@ -119,10 +118,25 @@ class MSSCapture:
                 "Install the capture extra and use a desktop session"
             ) from exc
         self._mss = mss.mss()
-        self.region = region
+        self._region = region
+        try:
+            # MSS establishes Windows DPI awareness before resolving client coordinates.
+            self.region = self._resolve_region()
+        except BaseException:
+            self._mss.close()
+            raise
         self.frame_id = 0
 
+    def _resolve_region(self):
+        region = self._region() if callable(self._region) else self._region
+        if not all(type(region.get(k)) is int for k in ("left", "top", "width", "height")):
+            raise ValueError("capture region needs integer left/top/width/height")
+        if region["width"] <= 0 or region["height"] <= 0:
+            raise ValueError("capture region needs positive width/height")
+        return dict(region)
+
     def capture(self) -> Frame:
+        self.region = self._resolve_region()
         raw = self._mss.grab(self.region)
         frame = Frame(Image.frombytes("RGB", raw.size, raw.rgb), self.frame_id, utcnow())
         self.frame_id += 1

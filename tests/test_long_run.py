@@ -17,6 +17,19 @@ def test_soak_records_real_milestones_and_refuses_stale_directory(tmp_path):
         run_soak(0.1, tmp_path / "soak")
 
 
+def test_soak_timer_starts_after_source_inventory(tmp_path, monkeypatch):
+    import time
+
+    def delayed_fingerprint():
+        time.sleep(0.15)
+        return "fixture-source-fingerprint"
+
+    monkeypatch.setattr("uga.supervisor.soak.source_fingerprint", delayed_fingerprint)
+    result = run_soak(0.05, tmp_path / "delayed", milestones=(0.05,))
+    assert result["passed"] and result["episodes"] > 0
+    assert result["elapsed_s"] >= 0.05
+
+
 def test_cancelled_soak_and_memory_budget_cannot_pass(tmp_path):
     cancel = threading.Event()
     cancel.set()

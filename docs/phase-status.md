@@ -12,12 +12,29 @@
 | 1 Local Test Game | **완료: 자체 아레나** | Godot 실제 import, 이동·벽·HP/아이템·인증 정지·전투/목표 6개 검사, 5개 시드 플레이 | Windows 창에서의 검증은 별도 |
 | 2 Player MVP | **완료: 자체 Linux 아레나 범위** | 실제 Godot 창 MSS 캡처→픽셀 인식→규칙/A*→자체 입력 브리지→효과 확인; 5개 시드 성공; 인식 정확도 100% | 실제 Windows MSS/SendInput, 일반 게임 인식 미검증 |
 | 3 Laya / VLM | **부분 완료** | 공식 API·메타데이터 조사, 정책 인터페이스, 별도 전략 프로세스와 fast 제어 분리 | 가중치 라이선스·무결성·실추론, OCR/VLM 및 모델 비교 미실행 |
-| 4 Supervisor | **부분 완료** | heartbeat, PID 식별, timeout·RSS 제한, 제한 복구, checkpoint, 로그 회전, 백그라운드 soak 관리·실제 시간 milestone | CPU 16시간 검사 진행 중; 실제 PC 게임/모델 12~16시간 운영 미검증 |
+| 4 Supervisor | **부분 완료** | heartbeat, PID 식별, timeout·RSS 제한, 제한 복구, checkpoint, 로그 회전, 백그라운드 soak 관리·실제 시간 milestone | CPU 16시간 검사 중단; 실제 PC 게임/모델 12~16시간 운영 미검증 |
 | 5 Reverse Agent | **완료: 자체 정적 분석 fixture 범위** | 실제 JADX class/DEX-APK, Ghidra ELF 함수·호출, REA discovery·읽기 전용 ELF 분석; CLI·REST·UI, provenance·GameSpec 정규화 | 일반 게임 메커니즘 추론·Windows 도구 실행 미검증; REA 전체 도구 검증 아님 |
 | 6 Builder Agent | **부분 완료** | Godot 생성·실제 import/smoke/play, Linux export·실행, Windows 교차 export, 해시 기반 후보 수정·확인한 오류 자동 복구 | 임의 자연어 게임 생성·일반 오류 수정·Unity 미구현; Windows 실행 미검증 |
 | 7 Integrated Workflow | **완료: 지원하는 아레나 범위** | Builder→Reverse→Godot Player, Reverse→Builder→Godot Player, CLI·HTTP에서 2-enemy GameSpec 보존·아티팩트 해시 검증 | 임의 바이너리 메커니즘 복원·Windows 화면 통합 미검증 |
 | 8 Self-Improvement | **부분 완료** | 고정 조건·harness 해시 비교, 경로 거리 후보, 불변 증거, 명시적 승인·원자 적용·회귀 롤백 테스트, 실제 후보 측정 | 임의 코드/모델 개선 미구현; 현재 후보는 **제안 상태**, 미적용 |
-| 9 Long-run & Dashboard | **부분 완료** | Chromium에서 세 에이전트 제출·완료·미리보기, 실제 HTTP·서비스 재시작, 공식 MCP SDK, 같은 CPU 연속 실행의 30분·2/4/8시간 통과 | 16시간 검사 진행 중; GPU/VRAM·실제 PC 게임/모델 장시간 운영 미검증 |
+| 9 Long-run & Dashboard | **부분 완료** | Chromium에서 세 에이전트 제출·완료·미리보기, 실제 HTTP·서비스 재시작, 공식 MCP SDK, 같은 CPU 연속 실행의 30분·2/4/8시간 통과 | 16시간 검사 미완료; GPU/VRAM·실제 PC 게임/모델 장시간 운영 미검증 |
+
+## Windows 로컬 테스트 준비 후속 변경
+
+[Windows 단계별 가이드](windows-testing.md)에 clone·설치·CPU 참조 게임·대시보드·Godot·
+화면 사전 점검·실제 입력 검증 순서를 정리했습니다. `desktop-check`는 입력을 보내지 않고
+프레임·상태·준비 여부를 저장합니다. `desktop-play`는 기본 5초의 준비 시간을 제공하고,
+MSS의 DPI 초기화 뒤 대상 PID 창의 client 영역을 매 프레임 확인합니다.
+
+후속 로컬 회귀: Linux Python 3.12는 실제 Godot/JADX/Ghidra를 포함해 **88 passed**, Python
+3.11 기본 검사는 **81 passed / 외부 도구 7 skipped**입니다. 실제 Godot MSS 화면 플레이
+5개 시드도 다시 통과했습니다. Windows 실제 GUI/SendInput 검증은 사용자 PC에서 수행해야 합니다.
+GitHub CI에서 발견한 Windows/Python 3.12의 짧은 soak 실패는 초기 소스 점검이 실행 시간을
+소진하던 문제였습니다. 지연을 넣어 실패를 재현한 뒤 준비가 끝난 후 타이머를 시작하도록 수정했습니다.
+
+기존 16시간 CPU 검사는 **중단 상태**입니다. 마지막 heartbeat는 37,013.272초(약 10시간
+16분), 133,639 에피소드·실패 0개이며, 현재 소유 프로세스와 최종 summary가 없습니다.
+30분·2/4/8시간 누적 구간 통과 기록은 보존하고 16시간 완료로 계산하지 않습니다.
 
 ## 실제 실행과 재현
 
@@ -100,8 +117,9 @@ seeds = `[7,11,19,23,31]`, 160×112 CPU 픽셀 참조 게임, 적 3개, 장애�
 이전 실행은 통과에 포함하지 않습니다. 현재 연속 검사는 `0c62575` 소스에서 시작했고,
 후속 분석 도구·화면 검증 작업에서 참조 Player 핵심 코드는 변경하지 않았습니다.
 30분·2/4/8시간 기록은 **하나의 연속 실행을 누적 측정한 구간**이며 독립 반복 실험이 아닙니다.
-8시간 peak RSS는 35.109MB였습니다. 16시간 전체 완료 결과는 아직 없으며 실행을 유지합니다.
-시작은 2026-10-21 00:53:33 KST, 목표 종료는 같은 날 약 16:53:33 KST입니다.
+8시간 peak RSS는 35.109MB였습니다. 시작은 2026-10-21 00:53:33 KST였지만,
+약 10시간 16분 뒤의 마지막 heartbeat 이후 프로세스 중단을 확인했습니다. 최종 summary가 없어
+16시간 검사는 미완료입니다. 자동으로 재시작하거나 중단된 시간을 새 실행에 합산하지 않았습니다.
 
 ```sh
 .venv/bin/uga soak-service status --output .uga/validation/continuous-16h

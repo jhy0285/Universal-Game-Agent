@@ -52,19 +52,17 @@ def run_soak(
         output / "episodes.jsonl", maxBytes=10_000_000, backupCount=3, encoding="utf-8"
     )
     logger.addHandler(handler)
-    start = time.monotonic()
     process = psutil.Process()
-    cpu_start = sum(process.cpu_times()[:2])
     run_id = str(uuid4())
     metadata = {
         "run_id": run_id,
         "backend": "reference-pixels-v1",
-        "started_at": utcnow().isoformat(),
         "pid": process.pid,
         "create_time": process.create_time(),
         "python": platform.python_version(),
         "platform": platform.platform(),
         "source_python_tree_sha256": source_fingerprint(),
+        "started_at": utcnow().isoformat(),
         "requested_s": duration_s,
         "rss_limit_mb": rss_limit_mb,
         "growth_limit_mb": growth_limit_mb,
@@ -102,6 +100,10 @@ def run_soak(
             "completed_milestones_s": completed_milestones.copy(),
         }
 
+    # Inventory and initial filesystem writes can be slow on a fresh Windows runner.
+    # Measure the requested playback duration after that preparation completes.
+    cpu_start = sum(process.cpu_times()[:2])
+    start = time.monotonic()
     try:
         while time.monotonic() - start < duration_s:
             if cancel and cancel.is_set():

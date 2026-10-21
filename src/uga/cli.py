@@ -32,17 +32,31 @@ def _main(argv: list[str] | None = None) -> int:
     player.add_argument("--navigation-mode", choices=["euclidean", "geodesic"])
     player.add_argument("--resume", type=Path)
     player.add_argument("--output", type=Path, default=Path(".uga/player"))
-    desktop = commands.add_parser(
-        "desktop-play", help="Capture/control an explicitly authorized Windows foreground test game"
-    )
-    desktop.add_argument("--target-pid", type=int, required=True)
-    desktop.add_argument(
-        "--region", type=int, nargs=4, metavar=("LEFT", "TOP", "WIDTH", "HEIGHT"), required=True
-    )
-    desktop.add_argument("--authorized", action="store_true")
-    desktop.add_argument("--seconds", type=float, default=60)
-    desktop.add_argument("--actions", type=Path, default=Path("configs/actions.json"))
-    desktop.add_argument("--output", type=Path, default=Path(".uga/desktop"))
+    for name in ("desktop-play", "desktop-check"):
+        desktop = commands.add_parser(
+            name,
+            help=(
+                "Capture/control an authorized Windows foreground test game"
+                if name == "desktop-play"
+                else "Capture and inspect the authorized game without sending input"
+            ),
+        )
+        desktop.add_argument("--target-pid", type=int, required=True)
+        desktop.add_argument(
+            "--region",
+            type=int,
+            nargs=4,
+            metavar=("LEFT", "TOP", "WIDTH", "HEIGHT"),
+            help="Optional physical ROI; defaults to the focused target's client area",
+        )
+        desktop.add_argument("--authorized", action="store_true")
+        desktop.add_argument(
+            "--start-delay", type=float, default=5, help="0..30 seconds to focus the game"
+        )
+        desktop.add_argument("--output", type=Path, default=Path(".uga") / name)
+        if name == "desktop-play":
+            desktop.add_argument("--seconds", type=float, default=60)
+            desktop.add_argument("--actions", type=Path, default=Path("configs/actions.json"))
     benchmark = commands.add_parser("benchmark", help="Run the fixed-seed pixel benchmark")
     benchmark.add_argument("--attack-range", type=float, default=14)
     benchmark.add_argument(
@@ -197,19 +211,44 @@ def _main(argv: list[str] | None = None) -> int:
         )
         print(result.model_dump_json(indent=2))
         return 0 if result.passed else 1
-    elif args.command == "desktop-play":
+    elif args.command in ("desktop-play", "desktop-check"):
+        import math
+        import sys
+        import time
+
         from uga.agents.player.controller import GuardedController, WindowsInputBackend
-        from uga.agents.player.desktop import run_desktop
+        from uga.agents.player.desktop import check_desktop, desktop_region, run_desktop
         from uga.agents.player.perception import MSSCapture, PixelPerception
         from uga.agents.player.policies import RuleBasedPolicy
 
+        if not math.isfinite(args.start_delay) or not 0 <= args.start_delay <= 30:
+            raise ValueError("--start-delay must be finite and in [0,30]")
+        if args.command == "desktop-play" and not 0 < args.seconds <= 57600:
+            raise ValueError("--seconds must be in (0,16 hours]")
         backend = WindowsInputBackend(args.target_pid, approved=args.authorized)
-        capture = MSSCapture(
+        controller = (
+            GuardedController.from_config(backend, args.actions, authorized=args.authorized)
+            if args.command == "desktop-play"
+            else None
+        )
+        if args.start_delay:
+            print(
+                f"Focus the authorized game window within {args.start_delay:g} seconds. "
+                "Input stops on focus loss; Ctrl+C cancels.",
+                file=sys.stderr,
+                flush=True,
+            )
+            time.sleep(args.start_delay)
+        requested = (
             dict(zip(("left", "top", "width", "height"), args.region, strict=True))
+            if args.region
+            else None
         )
-        controller = GuardedController.from_config(
-            backend, args.actions, authorized=args.authorized
-        )
+        capture = MSSCapture(lambda: desktop_region(backend, requested))
+        if args.command == "desktop-check":
+            result = check_desktop(capture, PixelPerception(), args.output)
+            print(json.dumps(result, indent=2))
+            return 0 if result["passed"] else 1
         result = run_desktop(
             capture,
             PixelPerception(),

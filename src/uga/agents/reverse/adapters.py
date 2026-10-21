@@ -1,5 +1,6 @@
 import json
 import shutil
+import tempfile
 from pathlib import Path
 from uuid import uuid4
 
@@ -31,6 +32,7 @@ class JadxAdapter:
         if java and installation:
             self.command = [
                 str(java.resolve()),
+                "-Xmx1g",
                 "-cp",
                 str(installation.resolve() / "lib" / "*"),
                 "jadx.cli.JadxCLI",
@@ -42,7 +44,14 @@ class JadxAdapter:
             self.command = [str(Path(found).resolve())]
 
     def analyze(
-        self, sample: Path, output: Path, *, approved=False, authorized=False, trusted_input=False
+        self,
+        sample: Path,
+        output: Path,
+        *,
+        approved=False,
+        authorized=False,
+        trusted_input=False,
+        heartbeat=None,
     ):
         _grant(approved, authorized, trusted_input)
         if not sample.is_file() or sample.is_symlink():
@@ -51,11 +60,19 @@ class JadxAdapter:
             raise FileExistsError(output)
         output.parent.mkdir(parents=True, exist_ok=True)
         result = run_tool(
-            [*self.command, "-d", str(output.resolve()), str(sample.resolve())],
+            [
+                *self.command,
+                "--threads-count",
+                "1",
+                "-d",
+                str(output.resolve()),
+                str(sample.resolve()),
+            ],
             output.parent,
             approved=approved,
             timeout_s=120,
             max_rss_mb=2048,
+            driver=heartbeat,
         )
         sources = list((output / "sources").rglob("*.java"))
         if not sources:
@@ -65,6 +82,8 @@ class JadxAdapter:
             "java_files": len(sources),
             "output": str(output),
             "log": result.output,
+            "tool_resources": result.resources,
+            "elapsed_s": result.elapsed_s,
         }
 
 
@@ -78,7 +97,14 @@ class GhidraAdapter:
         self.executable = Path(found).resolve()
 
     def analyze(
-        self, sample: Path, output: Path, *, approved=False, authorized=False, trusted_input=False
+        self,
+        sample: Path,
+        output: Path,
+        *,
+        approved=False,
+        authorized=False,
+        trusted_input=False,
+        heartbeat=None,
     ):
         _grant(approved, authorized, trusted_input)
         if not sample.is_file() or sample.is_symlink():
@@ -86,31 +112,35 @@ class GhidraAdapter:
         if output.exists():
             raise FileExistsError(output)
         output.mkdir(parents=True)
-        projects = output / "projects"
-        projects.mkdir()
         script = Path(__file__).parent / "ghidra_scripts"
         report = output.resolve() / "functions.json"
-        result = run_tool(
-            [
-                str(self.executable),
-                str(projects.resolve()),
-                "uga-" + uuid4().hex,
-                "-import",
-                str(sample.resolve()),
-                "-scriptPath",
-                str(script.resolve()),
-                "-postScript",
-                "UGAExport.java",
-                str(report),
-                "-analysisTimeoutPerFile",
-                "90",
-                "-deleteProject",
-            ],
-            output,
-            approved=approved,
-            timeout_s=180,
-            max_rss_mb=4096,
-        )
+        # Ghidra rejects project paths containing dot-prefixed elements such as .uga.
+        # Its temporary project is separate from the caller's retained evidence.
+        with tempfile.TemporaryDirectory(prefix="uga-ghidra-") as temporary:
+            result = run_tool(
+                [
+                    str(self.executable),
+                    str(Path(temporary).resolve()),
+                    "uga-" + uuid4().hex,
+                    "-import",
+                    str(sample.resolve()),
+                    "-scriptPath",
+                    str(script.resolve()),
+                    "-postScript",
+                    "UGAExport.java",
+                    str(report),
+                    "-analysisTimeoutPerFile",
+                    "90",
+                    "-max-cpu",
+                    "1",
+                    "-deleteProject",
+                ],
+                output,
+                approved=approved,
+                timeout_s=180,
+                max_rss_mb=4096,
+                driver=heartbeat,
+            )
         if not report.exists():
             raise UGAError("Ghidra did not produce function evidence")
         if report.stat().st_size > 16_000_000:
@@ -118,7 +148,13 @@ class GhidraAdapter:
         data = json.loads(report.read_text(encoding="utf-8"))
         if not isinstance(data.get("functions"), list):
             raise UGAError("invalid Ghidra export")
-        return {"analyzed": True, "evidence": data, "log": result.output}
+        return {
+            "analyzed": True,
+            "evidence": data,
+            "log": result.output,
+            "tool_resources": result.resources,
+            "elapsed_s": result.elapsed_s,
+        }
 
 
 class REAAdapter:
@@ -150,6 +186,34 @@ class REAAdapter:
         if name not in {t["name"] for t in self.tools()}:
             raise ValueError("tool was not discovered from this REA server")
         result = self.transport.call_tool(name, arguments)
+        if result.get("isError"):
+            raise UGAError("REA tool reported an error")
+        return {
+            "provider": "REA",
+            "tool": name,
+            "raw_evidence": result,
+            "mechanics_verified": False,
+        }
+
+
+class AsyncREAAdapter(REAAdapter):
+    """Same evidence contract for an explicitly connected asynchronous MCP transport."""
+
+    async def tools(self):
+        tools = await self.transport.list_tools()
+        if not all(
+            isinstance(tool.get("name"), str) and isinstance(tool.get("inputSchema"), dict)
+            for tool in tools
+        ):
+            raise UGAError("REA discovery returned invalid tool contracts")
+        return tools
+
+    async def invoke(self, name: str, arguments: dict, *, authorized=False):
+        if not authorized:
+            raise AuthorizationRequired("REA analysis scope must be authorized")
+        if name not in {tool["name"] for tool in await self.tools()}:
+            raise ValueError("tool was not discovered from this REA server")
+        result = await self.transport.call_tool(name, arguments)
         if result.get("isError"):
             raise UGAError("REA tool reported an error")
         return {

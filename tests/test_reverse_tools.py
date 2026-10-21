@@ -4,7 +4,10 @@ import pytest
 
 from uga.agents.reverse.agent import analyze
 from uga.agents.reverse.tool_analysis import analyze_with_tool
-from uga.core.errors import AuthorizationRequired
+from uga.agents.reverse.toolchain import load_analysis_tools
+from uga.core.contracts import TaskSpec
+from uga.core.errors import AuthorizationRequired, CapabilityUnavailable
+from uga.orchestrator.worker import validate_task
 
 
 def test_java_declarations_handle_modifiers_without_resolving_calls(tmp_path):
@@ -30,13 +33,31 @@ def test_tool_analysis_refuses_execution_without_complete_grant(tmp_path):
     assert not (tmp_path / "out").exists()
 
 
+def test_queued_decompilation_requires_explicit_trusted_input_and_owned_tool_config(tmp_path):
+    task = TaskSpec(
+        agent="reverse",
+        operation="decompile",
+        authorized=True,
+        parameters={"path": "fixture", "tool": "ghidra"},
+    )
+    with pytest.raises(AuthorizationRequired, match="sandbox"):
+        validate_task(task)
+    task.parameters["trusted_input"] = True
+    validate_task(task)
+    with pytest.raises(CapabilityUnavailable):
+        load_analysis_tools(tmp_path)
+    (tmp_path / "analysis-tools.json").write_text('{"java":"relative/path"}')
+    with pytest.raises(CapabilityUnavailable, match="Invalid"):
+        load_analysis_tools(tmp_path)
+
+
 def test_native_normalization_keeps_provenance_and_unknown_mechanics(tmp_path, monkeypatch):
     class Analyzer:
         def __init__(self, executable):
             pass
 
         def analyze(self, sample, output, **grants):
-            assert all(grants.values())
+            assert grants["approved"] and grants["authorized"] and grants["trusted_input"]
             return {
                 "analyzed": True,
                 "evidence": {

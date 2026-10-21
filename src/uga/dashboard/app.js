@@ -25,10 +25,18 @@ document.querySelectorAll("[data-launch]").forEach(button=>button.addEventListen
     }
     if(agent==="reverse"){
       if(!$("authorized").checked)throw new Error("분석 대상에 대한 권한 확인이 필요합니다.");
-      await launch(agent,"analyze",{path:$("analysis-path").value||"test_games/godot"},true);
+      const tool=$("analysis-tool").value;
+      const parameters={path:$("analysis-path").value||"test_games/godot"};
+      if(tool!=="static"){
+        if(!$("trusted-input").checked)throw new Error("디컴파일은 신뢰된 자체 파일만 지원합니다.");
+        Object.assign(parameters,{tool,trusted_input:true});
+      }
+      await launch(agent,tool==="static"?"analyze":"decompile",parameters,true);
     }
   }catch(e){notice(e.message);}finally{button.disabled=false;}
 }));
+$("analysis-tool").onchange=()=>{$("trusted-scope").hidden=$("analysis-tool").value==="static";$("trusted-input").checked=false;};
+$("analysis-path").oninput=()=>{$("trusted-input").checked=false;};
 $("workflow").onclick=async()=>{try{
   const engine=$("run-godot").checked,preset=$("export-preset").value;
   if(preset&&!engine)throw new Error("내보내기에는 Godot 실행 허용이 필요합니다.");

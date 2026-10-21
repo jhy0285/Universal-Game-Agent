@@ -1,3 +1,4 @@
+import os
 import time
 import traceback
 from pathlib import Path
@@ -45,11 +46,17 @@ class ReverseParameters(Contract):
     path: str = Field(min_length=1, max_length=4096)
 
 
+class DecompileParameters(ReverseParameters):
+    tool: Literal["jadx", "ghidra"]
+    trusted_input: bool = False
+
+
 def validate_task(spec: TaskSpec):
     contracts = {
         (AgentKind.PLAYER, "play"): PlayerParameters,
         (AgentKind.PLAYER, "soak"): SoakParameters,
         (AgentKind.REVERSE, "analyze"): ReverseParameters,
+        (AgentKind.REVERSE, "decompile"): DecompileParameters,
         (AgentKind.BUILDER, "generate"): BuilderParameters,
         (AgentKind.BUILDER, "build"): BuildParameters,
         (AgentKind.WORKFLOW, "build-play"): WorkflowParameters,
@@ -66,6 +73,10 @@ def validate_task(spec: TaskSpec):
     ) and not spec.authorized:
         raise AuthorizationRequired(
             "Target analysis and external engine execution require explicit authorization"
+        )
+    if spec.operation == "decompile" and not parameters.trusted_input:
+        raise AuthorizationRequired(
+            "Untrusted inputs require a separate OS sandbox before analysis"
         )
     if (
         spec.agent == AgentKind.WORKFLOW
@@ -121,11 +132,37 @@ def execute_task(raw: dict, root: str, analysis_root: str, connection):
                     heartbeat=heartbeat,
                 ).model_dump(mode="json")
         elif spec.agent == AgentKind.REVERSE:
-            from uga.agents.reverse.agent import analyze
+            if spec.operation == "decompile":
+                from uga.agents.reverse.tool_analysis import analyze_with_tool
+                from uga.agents.reverse.toolchain import load_analysis_tools
+                from uga.core.errors import CapabilityUnavailable
 
-            p = ReverseParameters.model_validate(spec.parameters)
-            path = analysis_path(p.path)
-            result = analyze(path, output, authorized=spec.authorized).model_dump(mode="json")
+                p = DecompileParameters.model_validate(spec.parameters)
+                tools = load_analysis_tools(Path(root))
+                if tools.java:
+                    os.environ["JAVA_HOME"] = str(tools.java.parent.parent)
+                if (p.tool == "jadx" and not (tools.java and tools.jadx_installation)) or (
+                    p.tool == "ghidra" and not tools.ghidra
+                ):
+                    raise CapabilityUnavailable("The selected analyzer is not configured")
+                result = analyze_with_tool(
+                    p.tool,
+                    analysis_path(p.path),
+                    output / "analysis",
+                    approved=spec.authorized,
+                    authorized=spec.authorized,
+                    trusted_input=p.trusted_input,
+                    java=tools.java,
+                    installation=tools.jadx_installation,
+                    executable=tools.ghidra if p.tool == "ghidra" else None,
+                    heartbeat=heartbeat,
+                ).model_dump(mode="json")
+            else:
+                from uga.agents.reverse.agent import analyze
+
+                p = ReverseParameters.model_validate(spec.parameters)
+                path = analysis_path(p.path)
+                result = analyze(path, output, authorized=spec.authorized).model_dump(mode="json")
         elif spec.agent == AgentKind.BUILDER:
             from uga.agents.builder.agent import generate, parse_requirements
 

@@ -11,7 +11,11 @@ class AgentRegistry:
                 "operations": ["play", "soak"],
                 "contract": TaskSpec.model_json_schema(),
             },
-            AgentKind.REVERSE: {"operations": ["analyze"], "requires_target_permission": True},
+            AgentKind.REVERSE: {
+                "operations": ["analyze", "decompile"],
+                "requires_target_permission": True,
+                "decompile_requires_trusted_input": True,
+            },
             AgentKind.BUILDER: {
                 "operations": ["generate", "build"],
                 "build_requires_authorization": True,

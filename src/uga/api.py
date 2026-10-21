@@ -222,7 +222,8 @@ def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -
             if (
                 path.is_file()
                 and not path.is_symlink()
-                and path.suffix in (".json", ".png", ".log", ".gd", ".tscn", ".godot", ".cfg")
+                and path.suffix
+                in (".json", ".png", ".log", ".gd", ".java", ".c", ".h", ".tscn", ".godot", ".cfg")
                 and path.stat().st_size <= 8_000_000
             ):
                 content_type = (

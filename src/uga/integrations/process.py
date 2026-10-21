@@ -20,13 +20,12 @@ class ToolResult:
     resources: dict[str, float] = field(default_factory=dict)
 
 
-def terminate_owned(process):
-    if process.poll() is not None:
-        return
+def terminate_owned(process, observed_children=()):
     try:
         children = psutil.Process(process.pid).children(recursive=True)
     except psutil.NoSuchProcess:
         children = []
+    children = list({child.pid: child for child in [*observed_children, *children]}.values())
     for child in reversed(children):
         try:
             child.terminate()
@@ -37,7 +36,7 @@ def terminate_owned(process):
             os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
             pass
-    else:
+    elif process.poll() is None:
         process.terminate()
     try:
         process.wait(timeout=1)
@@ -68,6 +67,8 @@ def run_tool(
     max_rss_mb=512,
     driver=None,
 ) -> ToolResult:
+    if not command:
+        raise ValueError("use an absolute executable path")
     if not approved:
         raise AuthorizationRequired(
             f"External tool execution needs approval: {Path(command[0]).name}"
@@ -94,6 +95,8 @@ def run_tool(
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
         )
         sampled_rss = sampled_cpu = 0.0
+        observed = {}
+        cpu_samples = {}
         last_resource_check = 0.0
         try:
             while process.poll() is None:
@@ -105,9 +108,24 @@ def run_tool(
                     last_resource_check = time.monotonic()
                     try:
                         child = psutil.Process(process.pid)
-                        rss = child.memory_info().rss / 2**20
+                        tree = [child, *child.children(recursive=True)]
+                        if len(tree) > 32:
+                            raise UGAError("external tool exceeded process count limit")
+                        rss = 0.0
+                        for member in tree:
+                            try:
+                                identity = (member.pid, member.create_time())
+                                observed[identity] = member
+                                if len(observed) > 256:
+                                    raise UGAError("external tool exceeded lifetime process limit")
+                                rss += member.memory_info().rss / 2**20
+                                cpu_samples[identity] = max(
+                                    cpu_samples.get(identity, 0), sum(member.cpu_times()[:2])
+                                )
+                            except psutil.NoSuchProcess:
+                                continue
                         sampled_rss = max(sampled_rss, rss)
-                        sampled_cpu = max(sampled_cpu, sum(child.cpu_times()[:2]))
+                        sampled_cpu = sum(cpu_samples.values())
                         if rss > max_rss_mb:
                             raise UGAError("external tool exceeded memory limit")
                     except psutil.NoSuchProcess:
@@ -134,4 +152,6 @@ def run_tool(
                 )
             return result
         finally:
-            terminate_owned(process)
+            terminate_owned(
+                process, [member for member in observed.values() if member.pid != process.pid]
+            )

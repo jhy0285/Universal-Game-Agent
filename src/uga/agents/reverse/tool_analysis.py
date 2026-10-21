@@ -20,6 +20,7 @@ def analyze_with_tool(
     executable: Path | None = None,
     java: Path | None = None,
     installation: Path | None = None,
+    heartbeat=None,
 ) -> GameSpec:
     _grant(approved, authorized, trusted_input)
     if tool not in ("jadx", "ghidra"):
@@ -34,7 +35,12 @@ def analyze_with_tool(
     origin = f"{tool}:sha256:{digest}"
     if tool == "jadx":
         evidence = JadxAdapter(executable, java=java, installation=installation).analyze(
-            sample, output / "decompiled", approved=True, authorized=True, trusted_input=True
+            sample,
+            output / "decompiled",
+            approved=True,
+            authorized=True,
+            trusted_input=True,
+            heartbeat=heartbeat,
         )
         spec = analyze(output / "decompiled" / "sources", output / "structure", authorized=True)
         for finding in spec.findings:
@@ -42,7 +48,12 @@ def analyze_with_tool(
         spec.name = sample.stem[:100] or "JADX sample"
     else:
         evidence = GhidraAdapter(executable).analyze(
-            sample, output / "native", approved=True, authorized=True, trusted_input=True
+            sample,
+            output / "native",
+            approved=True,
+            authorized=True,
+            trusted_input=True,
+            heartbeat=heartbeat,
         )
         functions = evidence["evidence"]["functions"]
         if len(functions) > 100000:

@@ -4,7 +4,8 @@
 Windows 11 / Python 3.11을 목표로 하며 Python 3.12와 Linux 개발도 지원합니다.
 유료 API와 GPU는 필수가 아닙니다.
 
-현재 구현은 CPU 참조 게임과 실제 Godot 생성·테스트·자율 플레이·내보내기를 검증한 플랫폼입니다.
+현재 구현은 CPU 참조 게임, 실제 Godot 생성·테스트·MSS 화면 자율 플레이·내보내기와
+자체 샘플의 JADX/Ghidra/REA 분석을 검증한 플랫폼입니다.
 임의의 상용 게임을 이해하는 완성된 AI는 아닙니다. 단계별 실제 실행 결과와
 미완료 범위는 [검증 현황](docs/phase-status.md)에 기록합니다.
 
@@ -46,7 +47,9 @@ GPU/VRAM 미측정 값은 미상으로 표시합니다. 외부 유료 API와 다
 ```
 
 공통 스키마: `uga schemas`. [설계](docs/architecture.md) · [운영](docs/operations.md) ·
-[외부 도구/모델](docs/integrations.md) · [엔진 검증](docs/engine-validation.md) · [공식 자료와 라이선스](docs/references.md).
+[외부 도구/모델](docs/integrations.md) · [엔진 검증](docs/engine-validation.md) ·
+[실제 화면](docs/screen-validation.md) · [Reverse 검증](docs/reverse-validation.md) ·
+[공식 자료와 라이선스](docs/references.md).
 
 자동 입력은 자체 테스트 게임이나 명시적으로 허가된 대상에만 사용합니다. 인증 요청,
 오래된 관측, 잘못된 프레임, 포커스 상실에서는 입력을 멈춥니다. 불명확한 값은 `null`이며

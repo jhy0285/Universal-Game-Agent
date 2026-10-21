@@ -1,0 +1,173 @@
+{
+  "source_commit": "232534010457ebec9ed1be0df6e8ef602dfd1e7f",
+  "source_python_tree_sha256": "2d863abb50dc2c35f7f4a216a72e9f22fb1739059675947f9aa251b5d4a10cff",
+  "recorded_at_utc": "2026-10-21T01:58:05.464852+00:00",
+  "recorded_at_kst": "2026-10-21T10:58:05.464852+09:00",
+  "passed": true,
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "tool_versions": {
+    "jadx": "1.5.6",
+    "ghidra": "12.1.4",
+    "jdk": "Temurin 21.0.12.1+1",
+    "rea-agents": "6.7.0",
+    "r8_d8": "9.5.28"
+  },
+  "verified_distribution_sha256": {
+    "jadx-1.5.6.zip": "545ea2be9c242511bc145755cf4bda2485ade42966e096f8b4d3da2a230e8974",
+    "ghidra_12.1.4_PUBLIC_20260921.zip": "ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db",
+    "temurin-jdk21.0.12.1+1": "ce79869e1307ed8ee1e2baa86a412b1eb5b75d10a01006d788a6f968bcfaee94"
+  },
+  "r8_sha256_computed_after_published_sha1_check": "38a9ffaaebbd17d1514e3ecbff5a85b989bb13c551b9e224c7409514eea84ff5",
+  "analyzers": [
+    {
+      "tool": "jadx",
+      "input_kind": "Java class",
+      "target_sha256": "454fa1f021eaca4f3d57b74a52e02655da6930dda6c3b45b05efa29c5f01e175",
+      "recovered_fixture_functions": [
+        "clampHp",
+        "applyDamage",
+        "usePotion"
+      ],
+      "genre": null,
+      "mechanics_verified": false,
+      "executed_target": false,
+      "tool_report": {
+        "path": ".uga/validation/reverse-real/jadx-class/tool-report.json",
+        "sha256": "2b2fe897cdff64ee74b6bdb0ed0127a95fbb02ed40ef4930b6ce4d46109227e1",
+        "size_bytes": 436
+      },
+      "normalized_gamespec": {
+        "path": ".uga/validation/reverse-real/jadx-class-result.json",
+        "sha256": "77a262556f4478c4b320b818adf0722ec70b607add37023fe91820d865c7a943",
+        "size_bytes": 2296
+      }
+    },
+    {
+      "tool": "jadx",
+      "input_kind": "DEX 035 inside a static-only APK fixture",
+      "target_sha256": "7112ece9816c8a434739b76d08f017a84228411cd3da5e6edb5740192a1b4294",
+      "recovered_fixture_functions": [
+        "clampHp",
+        "applyDamage",
+        "usePotion"
+      ],
+      "genre": null,
+      "mechanics_verified": false,
+      "executed_target": false,
+      "tool_report": {
+        "path": ".uga/validation/reverse-real/jadx-apk/tool-report.json",
+        "sha256": "b0c7d8795ebf545ade9528a3d24f7ef0e2bef093c66a821e1e1b2499835a7454",
+        "size_bytes": 572
+      },
+      "normalized_gamespec": {
+        "path": ".uga/validation/reverse-real/jadx-apk-result.json",
+        "sha256": "b9edaf79e7bb753428307532a4d5714bf84a550350689867a8be3dde57ebcb98",
+        "size_bytes": 2294
+      },
+      "tool_resources": {
+        "sampled_peak_rss_mb": 166.0,
+        "sampled_cpu_seconds": 2.36
+      },
+      "elapsed_s": 1.8625487829995109
+    },
+    {
+      "tool": "ghidra",
+      "input_kind": "ELF",
+      "target_sha256": "7591d509b13d1e95b491a42a3d5401d9982b0640e706498c9b7a837345c48a05",
+      "recovered_fixture_functions": [
+        "clamp_hp",
+        "apply_damage",
+        "use_potion"
+      ],
+      "genre": null,
+      "mechanics_verified": false,
+      "executed_target": false,
+      "tool_report": {
+        "path": ".uga/validation/reverse-real/ghidra-v3/tool-report.json",
+        "sha256": "cb0d2300e044b3a48706a8c93814682abae1099f3b874329da9bf4ea3434168a",
+        "size_bytes": 12611
+      },
+      "normalized_gamespec": {
+        "path": ".uga/validation/reverse-real/ghidra-v3-result.json",
+        "sha256": "bc49bfdd12c416437c4582fb0e3136827150c84bf636589215fd7954be32fa77",
+        "size_bytes": 6503
+      },
+      "function_count": 18,
+      "verified_call": [
+        "apply_damage",
+        "clamp_hp"
+      ],
+      "tool_resources": {
+        "sampled_peak_rss_mb": 416.36328125,
+        "sampled_cpu_seconds": 14.16
+      },
+      "elapsed_s": 8.21022051700129
+    }
+  ],
+  "rea": {
+    "discovered_tools": 207,
+    "validated_tool": "inspect_binary_layout",
+    "protocol": "2025-11-25",
+    "target_sha256": "7591d509b13d1e95b491a42a3d5401d9982b0640e706498c9b7a837345c48a05",
+    "executed_target": false,
+    "mechanics_verified": false,
+    "external_ai_connected": false,
+    "all_discovered_tools_tested": false,
+    "provider_versions": {
+      "pwntools": "4.15.0",
+      "pyelftools": "0.33",
+      "Unicorn": "2.1.2"
+    },
+    "raw_evidence": {
+      "path": ".uga/validation/rea-binary-layout.json",
+      "sha256": "2d299af5464828f7ec017375e79b3a8955cb1d50f72f4b17f4b94546ae87f274",
+      "size_bytes": 137740
+    },
+    "doctor_evidence": {
+      "path": ".uga/validation/rea-doctor.json",
+      "sha256": "4ff44c363cfa8b80455c79a8f0a3a0be313f0fc0ee48b61ba417112d75944d2d",
+      "size_bytes": 1624
+    }
+  },
+  "http": {
+    "passed": true,
+    "jobs": [
+      {
+        "tool": "jadx",
+        "id": "e10bf626-77b6-4e98-8c63-baeb7668c417",
+        "status": "succeeded",
+        "functions": [
+          "applyDamage",
+          "clampHp",
+          "usePotion"
+        ],
+        "verified_artifacts": 5
+      },
+      {
+        "tool": "ghidra",
+        "id": "cb08ec67-e7d9-483a-8559-f4a1e35979c8",
+        "status": "succeeded",
+        "functions": [
+          "apply_damage",
+          "clamp_hp",
+          "use_potion"
+        ],
+        "verified_artifacts": 3
+      }
+    ],
+    "executed_target": false,
+    "raw_evidence": {
+      "path": ".uga/validation/analysis-http.json",
+      "sha256": "808fb71e36be18a9e4b7de8573c23ecb32851787f5b628652db3d301207bc0a8",
+      "size_bytes": 546
+    }
+  },
+  "limitations": [
+    "Own compiled fixtures only; no untrusted inputs",
+    "APK fixture is not an installable Android app",
+    "Static functions/calls do not establish game mechanics",
+    "No target host execution; offline PLT inference may emulate instructions with Unicorn",
+    "Process resource limits are not an OS security sandbox",
+    "Windows analyzer runtime unverified"
+  ]
+}

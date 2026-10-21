@@ -1,18 +1,26 @@
 {
-  "started_at": "2026-10-20T15:43:34.344096+00:00",
-  "finished_at": "2026-10-20T15:44:00.137037+00:00",
+  "source_commit": "232534010457ebec9ed1be0df6e8ef602dfd1e7f",
+  "source_python_tree_sha256": "2d863abb50dc2c35f7f4a216a72e9f22fb1739059675947f9aa251b5d4a10cff",
+  "recorded_at_utc": "2026-10-21T01:58:05.464852+00:00",
+  "recorded_at_kst": "2026-10-21T10:58:05.464852+09:00",
+  "started_at": "2026-10-21T01:24:05.929111+00:00",
+  "finished_at": "2026-10-21T01:24:30.210540+00:00",
   "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
   "python": "3.12.14",
   "engine_sha256": "f64d4ed19fc9df9440321653fcc80df8c6e365ba7b6de0a29e2cfa9fa71bfeb3",
   "backend": "godot-ground-truth-bridge",
   "screenshot_perception_tested": false,
+  "passed": true,
   "smoke": {
     "checks": 6,
     "failures": [],
     "passed": true,
-    "run_id": "6446c367-26cc-46d6-b0e1-7b04f6ef69fb"
+    "run_id": "42708919-0146-40dd-828b-a6ce364edd57",
+    "engine_resources": {
+      "sampled_peak_rss_mb": 59.39453125,
+      "sampled_cpu_seconds": 0.15
+    }
   },
-  "passed": true,
   "fixed_seed_play": [
     {
       "seed": 7,
@@ -21,13 +29,25 @@
       "hp": 100,
       "frames": 62,
       "metrics": {
-        "engine_round_trip_p50_ms": 5.249342000752222,
-        "engine_round_trip_p95_ms": 10.543888998654438,
-        "engine_round_trip_p99_ms": 10.65636259954772,
-        "engine_round_trip_mean_ms": 5.775465000028146,
-        "rss_mb": 32.578125,
-        "cpu_seconds": 0.06999999999999995,
-        "cpu_percent": 11.059379913634656
+        "decision_p50_ms": 0.1446424976165872,
+        "decision_p95_ms": 0.5708402994059726,
+        "decision_p99_ms": 0.8723483697394843,
+        "decision_mean_ms": 0.22147074137577757,
+        "control_p50_ms": 0.9476774976064917,
+        "control_p95_ms": 5.473217401959125,
+        "control_p99_ms": 25.76974271316432,
+        "control_mean_ms": 2.1407875806729746,
+        "engine_round_trip_p50_ms": 5.312296998454258,
+        "engine_round_trip_p95_ms": 10.525509002036415,
+        "engine_round_trip_p99_ms": 11.810999401495792,
+        "engine_round_trip_mean_ms": 6.472101229787842,
+        "rss_mb": 32.58984375,
+        "cpu_seconds": 0.08000000000000002,
+        "cpu_percent": 9.604044293763266
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 58.734375,
+        "sampled_cpu_seconds": 0.18000000000000002
       }
     },
     {
@@ -37,13 +57,25 @@
       "hp": 100,
       "frames": 51,
       "metrics": {
-        "engine_round_trip_p50_ms": 5.233738000242738,
-        "engine_round_trip_p95_ms": 10.9056712981328,
-        "engine_round_trip_p99_ms": 11.313146007851174,
-        "engine_round_trip_mean_ms": 6.11796270000923,
-        "rss_mb": 32.58984375,
-        "cpu_seconds": 0.040000000000000036,
-        "cpu_percent": 6.223879806015414
+        "decision_p50_ms": 0.1015800007735379,
+        "decision_p95_ms": 0.43013249887735583,
+        "decision_p99_ms": 0.48973549928632565,
+        "decision_mean_ms": 0.14467666644087135,
+        "control_p50_ms": 0.8275579966721125,
+        "control_p95_ms": 1.9378314973437227,
+        "control_p99_ms": 4.768021499330644,
+        "control_mean_ms": 1.0598442152281766,
+        "engine_round_trip_p50_ms": 5.2033914980711415,
+        "engine_round_trip_p95_ms": 10.515391396620544,
+        "engine_round_trip_p99_ms": 12.554132130171636,
+        "engine_round_trip_mean_ms": 5.990565720130689,
+        "rss_mb": 32.609375,
+        "cpu_seconds": 0.06000000000000005,
+        "cpu_percent": 8.853690916135099
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 58.39453125,
+        "sampled_cpu_seconds": 0.15
       }
     },
     {
@@ -53,13 +85,25 @@
       "hp": 100,
       "frames": 57,
       "metrics": {
-        "engine_round_trip_p50_ms": 5.271283000183757,
-        "engine_round_trip_p95_ms": 10.45031350076897,
-        "engine_round_trip_p99_ms": 10.718287900817813,
-        "engine_round_trip_mean_ms": 5.979073982156739,
-        "rss_mb": 32.60546875,
-        "cpu_seconds": 0.08000000000000007,
-        "cpu_percent": 12.191971887685314
+        "decision_p50_ms": 0.11922600242542103,
+        "decision_p95_ms": 0.6411796028260142,
+        "decision_p99_ms": 1.0166778019629403,
+        "decision_mean_ms": 0.1943963865765877,
+        "control_p50_ms": 0.8903199995984323,
+        "control_p95_ms": 1.9973810034571218,
+        "control_p99_ms": 4.035319558752225,
+        "control_mean_ms": 1.0681947895679051,
+        "engine_round_trip_p50_ms": 5.188687500776723,
+        "engine_round_trip_p95_ms": 10.418643749289913,
+        "engine_round_trip_p99_ms": 11.524982750052004,
+        "engine_round_trip_mean_ms": 6.0763965527387755,
+        "rss_mb": 32.6171875,
+        "cpu_seconds": 0.06000000000000005,
+        "cpu_percent": 9.208753749764293
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 58.41015625,
+        "sampled_cpu_seconds": 0.14
       }
     },
     {
@@ -69,13 +113,25 @@
       "hp": 100,
       "frames": 54,
       "metrics": {
-        "engine_round_trip_p50_ms": 5.251291000604397,
-        "engine_round_trip_p95_ms": 10.403827999107307,
-        "engine_round_trip_p99_ms": 10.570889079972401,
-        "engine_round_trip_mean_ms": 5.8581105093356385,
-        "rss_mb": 32.6171875,
-        "cpu_seconds": 0.05999999999999983,
-        "cpu_percent": 9.498064462276403
+        "decision_p50_ms": 0.19640450045699254,
+        "decision_p95_ms": 0.8504547979100608,
+        "decision_p99_ms": 1.0747741282830245,
+        "decision_mean_ms": 0.25619349980843253,
+        "control_p50_ms": 0.8008389995666221,
+        "control_p95_ms": 3.5448986014671395,
+        "control_p99_ms": 15.330197216971985,
+        "control_mean_ms": 1.5463489821909375,
+        "engine_round_trip_p50_ms": 5.213422002270818,
+        "engine_round_trip_p95_ms": 10.509283396822866,
+        "engine_round_trip_p99_ms": 11.380489357688926,
+        "engine_round_trip_mean_ms": 5.985300980545668,
+        "rss_mb": 32.625,
+        "cpu_seconds": 0.04999999999999993,
+        "cpu_percent": 7.399443545273019
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 58.38671875,
+        "sampled_cpu_seconds": 0.18
       }
     },
     {
@@ -85,13 +141,25 @@
       "hp": 100,
       "frames": 59,
       "metrics": {
-        "engine_round_trip_p50_ms": 5.268063499897835,
-        "engine_round_trip_p95_ms": 10.699101897080254,
-        "engine_round_trip_p99_ms": 10.9629620584019,
-        "engine_round_trip_mean_ms": 6.157535396564997,
-        "rss_mb": 32.62890625,
-        "cpu_seconds": 0.08000000000000007,
-        "cpu_percent": 12.53081432971861
+        "decision_p50_ms": 0.0931370013859123,
+        "decision_p95_ms": 0.5083761985588354,
+        "decision_p99_ms": 0.6874088803306224,
+        "decision_mean_ms": 0.1696742882644284,
+        "control_p50_ms": 0.9340449978481047,
+        "control_p95_ms": 2.8404529999534143,
+        "control_p99_ms": 3.915251641446958,
+        "control_mean_ms": 1.2404394231961597,
+        "engine_round_trip_p50_ms": 5.203755001275567,
+        "engine_round_trip_p95_ms": 10.614034854006604,
+        "engine_round_trip_p99_ms": 11.465408592484891,
+        "engine_round_trip_mean_ms": 6.588158879884728,
+        "rss_mb": 32.64453125,
+        "cpu_seconds": 0.07000000000000006,
+        "cpu_percent": 9.66672141251976
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 58.40234375,
+        "sampled_cpu_seconds": 0.16
       }
     }
   ],
@@ -109,16 +177,29 @@
   },
   "exports": {
     "Linux": {
-      "sha256": "4c65e32b1e1fc44e163d5a4d41df31cb98e282321e659d03a5accd2763452c42",
-      "size_bytes": 71086824,
-      "runtime_tested": true
+      "sha256": "63fa814c0d8654681dd2d6ab523630e96ac4dbd147f9743b60701128a60370f8",
+      "size_bytes": 71087176,
+      "runtime_tested": true,
+      "engine_resources": {
+        "sampled_peak_rss_mb": 640.01953125,
+        "sampled_cpu_seconds": 3.23
+      }
     },
     "Windows Desktop": {
-      "sha256": "3cd95555ac6f261de449e67f369f7dea66c0deaf49404edf60596c1f2c7b48e3",
-      "size_bytes": 104529624,
-      "runtime_tested": false
+      "sha256": "73acefc355924d40163b84f501a2864d0860e647c3f1e38efab34cbc11971c2d",
+      "size_bytes": 104529976,
+      "runtime_tested": false,
+      "engine_resources": {
+        "sampled_peak_rss_mb": 711.99609375,
+        "sampled_cpu_seconds": 3.64
+      }
     }
   },
   "export_template_sha512": "da606b61c10157844f8300172df374472665f95015495cb1a7cd132c40ede404faa96cc1016a4b9662db9909ddea69632c4948b2cd11163438dad4808881fb68",
-  "command": ".venv/bin/python scripts/validate-godot.py --allow-external-tools --export --output .uga/validation/engine-complete-v1"
+  "raw_evidence": {
+    "path": ".uga/validation/engine-release-final/results.json",
+    "sha256": "0911cdf0e8ea8c4e8a45574b0687c15385c79e79bb21343554fa0adc3a453fa9",
+    "size_bytes": 53636
+  },
+  "command": ".venv/bin/python scripts/validate-godot.py --allow-external-tools --export --output .uga/validation/engine-release-final"
 }

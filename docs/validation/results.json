@@ -1,10 +1,14 @@
 {
-  "source_commit": "7d010d1b8eacf33a3720f9dd02a7fa0ec03b74c0",
+  "source_commit": "232534010457ebec9ed1be0df6e8ef602dfd1e7f",
+  "source_python_tree_sha256": "2d863abb50dc2c35f7f4a216a72e9f22fb1739059675947f9aa251b5d4a10cff",
+  "recorded_at_utc": "2026-10-21T01:58:05.464852+00:00",
+  "recorded_at_kst": "2026-10-21T10:58:05.464852+09:00",
+  "scope": "Supported own-arena MVP; partial broader master prompt. Later documentation-only commit does not change tested code.",
   "runtime": {
     "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
     "python": "3.12.14",
     "logical_cpus": 5,
-    "gpu": "unmeasured"
+    "gpu": "unmeasured; actual screen run used Mesa software rendering"
   },
   "dependencies": {
     "pydantic": "2.14.1",
@@ -13,38 +17,131 @@
     "Pillow": "12.3.0",
     "psutil": "7.2.2",
     "pytest": "9.1.1",
-    "ruff": "0.17.1"
+    "ruff": "0.17.1",
+    "mss": "10.2.0"
   },
-  "pytest": {
-    "tests": 57,
-    "failures": 0,
-    "errors": 0,
-    "skipped": 0
+  "pytest_matrix": [
+    {
+      "python": "3.11.17",
+      "tests": 77,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testcase_elements": 77,
+      "seconds": 63.556,
+      "timestamp_utc": "2026-10-21T01:35:21.646310+00:00",
+      "junit": {
+        "path": ".uga/validation/current-python311-tests.xml",
+        "sha256": "e42d9186d1fb08a7c7f759d1dd2360a651ef3c6ccc8239095fbc9bf75f04ce1e",
+        "size_bytes": 9379
+      },
+      "result": "passed from complete JUnit",
+      "launcher_exit_handle": "not retained after environment reconnect"
+    },
+    {
+      "python": "3.12.14",
+      "tests": 77,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testcase_elements": 77,
+      "seconds": 68.095,
+      "timestamp_utc": "2026-10-21T01:35:20.272936+00:00",
+      "junit": {
+        "path": ".uga/validation/current-python312-tests.xml",
+        "sha256": "84318d4307710c68be56cc3659e14e065e0fe813ed1d12a97b2f7e402500dd30",
+        "size_bytes": 9379
+      },
+      "result": "passed from complete JUnit",
+      "launcher_exit_handle": "not retained after environment reconnect"
+    }
+  ],
+  "pytest_external_tests": {
+    "godot": 5,
+    "analyzers": 2,
+    "default_skipped": 7
   },
-  "pytest_seconds": 12.671,
-  "line_coverage_percent": 72.70511779041429,
+  "line_coverage_percent": 75.53156689564933,
+  "coverage_totals": {
+    "covered_lines": 2309,
+    "num_statements": 3057,
+    "percent_covered": 75.53156689564933,
+    "percent_covered_display": "76",
+    "missing_lines": 748,
+    "excluded_lines": 3,
+    "percent_statements_covered": 75.53156689564933,
+    "percent_statements_covered_display": "76"
+  },
+  "coverage_report": {
+    "path": ".uga/validation/current-python312-coverage.json",
+    "sha256": "1d4236dc973f917f13b9fa38084b8600c3e26c30f12da3b24ca6d03681228160",
+    "size_bytes": 186465
+  },
   "checks": {
-    "lint": "passed",
-    "format": "passed",
-    "frozen_lock": "passed",
-    "python311_syntax": "passed (not runtime)",
-    "javascript_syntax": "passed Node 24.19.0",
-    "isolated_wheel": "passed",
+    "lint": "passed Ruff",
+    "format": "passed; 89 files",
+    "frozen_lock": "passed; 31 locked packages",
+    "javascript_syntax": "passed Node 24.19.0; dashboard and browser-validation script",
+    "git_diff_whitespace": "passed",
     "install_repeatability": "passed twice",
     "owned_service_start_reuse_restart": "passed",
-    "live_http": {
-      "health": {
-        "status": "ok",
-        "version": "0.1.0"
-      },
-      "dashboard_bytes": 5142,
-      "workflow_id": "c74d58cc-7ce7-4f48-9d5e-404a0201da93",
+    "isolated_wheel": {
+      "passed": true,
+      "python": "3.12.14",
+      "isolated_mode": true,
+      "working_directory": "/tmp",
+      "installed_package": "/workspace/Universal-Game-Agent/.uga/wheel-final-venv/lib/python3.12/site-packages/uga",
+      "wheel_sha256": "7a0513912a452b510f9b614bf3fd1aa4f1e7385bcfc1acd529b7246f09b4da2b",
+      "wheel_size_bytes": 86633,
+      "package_files_verified": 60,
+      "required_resources_verified": [
+        "dashboard/index.html",
+        "dashboard/app.js",
+        "dashboard/style.css",
+        "agents/reverse/ghidra_scripts/UGAExport.java",
+        "agents/builder/templates/godot/main.gd",
+        "agents/builder/templates/godot/main.gd.uid",
+        "agents/builder/templates/godot/smoke_test.gd.uid"
+      ],
+      "godot_workflow_passed": true,
+      "verified_backend": "godot-ground-truth-bridge",
+      "raw_workflow": ".uga/validation/wheel-packaged-final.stdout.json"
+    },
+    "live_engine_http": {
+      "passed": true,
+      "job_id": "1c13825e-485f-4566-9b56-3934c01a3fa8",
       "status": "succeeded",
-      "reference_player_success": true,
-      "engine_executed": false,
-      "artifact_count": 14
+      "enemy_count": 2,
+      "godot_executed": true,
+      "verified_artifacts": 21
+    },
+    "live_engine_http_evidence": {
+      "path": ".uga/validation/live-engine-http.json",
+      "sha256": "d624b18609fe895cccdafb0e650bca2c8aa40b899e25e44d2eabd9563780f3c4",
+      "size_bytes": 1469
+    },
+    "mcp_official_sdk": {
+      "version": "2.3.0",
+      "protocol": "2025-06-18",
+      "tools": [
+        "uga_submit_task",
+        "uga_job_status",
+        "uga_cancel_task"
+      ],
+      "player_status": "succeeded",
+      "cancelled_task_status": "cancelled",
+      "external_ai_connected": false,
+      "passed": true,
+      "raw_evidence": {
+        "path": ".uga/validation/mcp-sdk/results.json",
+        "sha256": "498a7a834adc5d4da6fd5ef9a27cf32320161d2b641e4582c58515f1f2935df1",
+        "size_bytes": 2128
+      }
     }
   },
+  "engine_report": "godot.json",
+  "reverse_report": "reverse.json",
+  "screen_report": "screen.json",
   "benchmark": {
     "command": ".venv/bin/uga improve --output .uga/validation/final-improvement",
     "seeds": [
@@ -159,7 +256,9 @@
       "latency_tolerance": 0.25
     },
     "proposal_id": "838ce3a2-04c4-4710-a595-28060df9ba5b",
-    "status": "proposed, not activated"
+    "status": "proposed, not activated",
+    "source_commit": "7d010d1b8eacf33a3720f9dd02a7fa0ec03b74c0",
+    "player_core_unchanged_through_commit": "232534010457ebec9ed1be0df6e8ef602dfd1e7f"
   },
   "long_runs": {
     "baseline_30_minutes": {
@@ -176,7 +275,7 @@
         "cpu_seconds": 1790.87
       }
     },
-    "final_code_60_seconds": {
+    "player_core_regression_60_seconds": {
       "requested_s": 60.0,
       "elapsed_s": 60.26381032000063,
       "episodes": 195,
@@ -187,28 +286,140 @@
       "rss_growth_after_warmup_mb": 0.04296875,
       "cpu_seconds": 60.02
     },
-    "hours_2_4_8_16": "not run"
+    "continuous_16h": {
+      "source_commit": "0c62575",
+      "source_python_tree_sha256": "fe88005cfbb06adcbaeb970a5baf1a750f5a5c76580195dccd3770ab456c4c01",
+      "run": {
+        "run_id": "0a61fa43-c4d6-4ecc-9f3e-f7b9121767f0",
+        "backend": "reference-pixels-v1",
+        "started_at": "2026-10-20T15:53:33.026878+00:00",
+        "pid": 45715,
+        "create_time": 1792511612.31,
+        "python": "3.12.14",
+        "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+        "source_python_tree_sha256": "fe88005cfbb06adcbaeb970a5baf1a750f5a5c76580195dccd3770ab456c4c01",
+        "requested_s": 57600.0,
+        "rss_limit_mb": 512,
+        "growth_limit_mb": 64,
+        "status": "running"
+      },
+      "owned_process_running_at_recording": true,
+      "heartbeat_at_recording": {
+        "run_id": "0a61fa43-c4d6-4ecc-9f3e-f7b9121767f0",
+        "episodes": 130893,
+        "failures": 0,
+        "elapsed_s": 36272.899498672006,
+        "rss_mb": 35.11328125,
+        "requested_s": 57600.0,
+        "completed_milestones_s": [
+          1800.0,
+          7200.0,
+          14400.0,
+          28800.0
+        ]
+      },
+      "summary": null,
+      "milestones": [
+        {
+          "run_id": "0a61fa43-c4d6-4ecc-9f3e-f7b9121767f0",
+          "requested_s": 1800.0,
+          "elapsed_s": 1800.2872282099997,
+          "episodes": 5727,
+          "failures": 0,
+          "cancelled": false,
+          "passed": true,
+          "rss_peak_mb": 34.4375,
+          "rss_growth_after_warmup_mb": 0.5703125,
+          "cpu_seconds": 1789.87,
+          "error": null,
+          "completed_milestones_s": [
+            1800.0
+          ]
+        },
+        {
+          "run_id": "0a61fa43-c4d6-4ecc-9f3e-f7b9121767f0",
+          "requested_s": 7200.0,
+          "elapsed_s": 7200.2015021310035,
+          "episodes": 24899,
+          "failures": 0,
+          "cancelled": false,
+          "passed": true,
+          "rss_peak_mb": 34.44921875,
+          "rss_growth_after_warmup_mb": 0.58203125,
+          "cpu_seconds": 7154.52,
+          "error": null,
+          "completed_milestones_s": [
+            1800.0,
+            7200.0
+          ]
+        },
+        {
+          "run_id": "0a61fa43-c4d6-4ecc-9f3e-f7b9121767f0",
+          "requested_s": 14400.0,
+          "elapsed_s": 14400.191122915003,
+          "episodes": 51144,
+          "failures": 0,
+          "cancelled": false,
+          "passed": true,
+          "rss_peak_mb": 35.109375,
+          "rss_growth_after_warmup_mb": 1.2421875,
+          "cpu_seconds": 14314.320000000002,
+          "error": null,
+          "completed_milestones_s": [
+            1800.0,
+            7200.0,
+            14400.0
+          ]
+        },
+        {
+          "run_id": "0a61fa43-c4d6-4ecc-9f3e-f7b9121767f0",
+          "requested_s": 28800.0,
+          "elapsed_s": 28800.248432464,
+          "episodes": 103636,
+          "failures": 0,
+          "cancelled": false,
+          "passed": true,
+          "rss_peak_mb": 35.109375,
+          "rss_growth_after_warmup_mb": 1.2421875,
+          "cpu_seconds": 28643.57,
+          "error": null,
+          "completed_milestones_s": [
+            1800.0,
+            7200.0,
+            14400.0,
+            28800.0
+          ]
+        }
+      ],
+      "milestone_semantics": "Cumulative prefixes of the same continuous run, not independent repetitions",
+      "expected_finish_kst": "2026-10-21T16:53:33+09:00",
+      "sixteen_hour_passed": false,
+      "raw_results_directory": ".uga/validation/continuous-16h/results"
+    }
   },
-  "wheel_sha256": "88c0f6c092280504a98f624c7ff7004f7655e4b02d46090f06059f1d700a1233",
+  "wheel_sha256": "7a0513912a452b510f9b614bf3fd1aa4f1e7385bcfc1acd529b7246f09b4da2b",
   "environment_draft": {
-    "status": "saved",
+    "draft_id": "df2662ef-ed77-4833-96fb-e8d0a268a029~cecfgdraft_6ad785c05f8881a0b7c4aca2fde22f6e",
+    "revision": 3,
+    "status": "saved; reread matches",
     "install_script": true,
     "start_skill": true,
     "added_custom_domain": "huggingface.co",
+    "requires_publish": true,
     "published": false,
-    "fresh_task_restoration": "not verified"
+    "runtime_custom_allowed_hosts": [],
+    "runtime_network_policy_state": "unknown",
+    "fresh_task_restoration": "not verified; reconnect to same processes is not fresh restoration",
+    "local_git_commits_pushed": false
   },
   "unrun": [
-    "Windows 11 runtime",
-    "Python 3.11 runtime",
+    "Windows 11 runtime and native desktop SendInput",
     "remote CI",
-    "actual Godot import/smoke/play/export (approval pending)",
-    "JADX/Ghidra/REA real calls",
-    "Laya checkpoint license/integrity/inference",
-    "OCR/VLM performance",
-    "browser rendering",
-    "GPU/VRAM",
-    "2/4/8/16 hour soak"
+    "Laya checkpoint availability/license/integrity/inference; model card blocked by current proxy",
+    "general OCR/VLM and same-machine model comparison",
+    "GPU/VRAM measurements",
+    "completed 16-hour soak (still running; 30m/2h/4h/8h prefixes passed)",
+    "environment publication and fresh-task restoration"
   ],
-  "source_python_tree_sha256": "fbceb57b62bbb148365b66ce1a6524549ddec9e0dcc4bbd305044271efa5a584"
+  "evidence_storage": "Curated results are committed; raw logs, binaries and screenshots remain local under ignored .uga/validation."
 }

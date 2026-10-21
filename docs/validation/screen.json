@@ -1,0 +1,283 @@
+{
+  "source_commit": "232534010457ebec9ed1be0df6e8ef602dfd1e7f",
+  "source_python_tree_sha256": "2d863abb50dc2c35f7f4a216a72e9f22fb1739059675947f9aa251b5d4a10cff",
+  "recorded_at_utc": "2026-10-21T01:58:05.464852+00:00",
+  "recorded_at_kst": "2026-10-21T10:58:05.464852+09:00",
+  "passed": true,
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "backend": "godot-mss-pixels",
+  "input_backend": "authorized test-game file bridge",
+  "capture": "MSS 10.2.0",
+  "display": "Xvfb / X11 / Mesa software rendering",
+  "captured_size": [
+    640,
+    448
+  ],
+  "perception_size": [
+    160,
+    112
+  ],
+  "runs": [
+    {
+      "seed": 7,
+      "success": true,
+      "steps": 61,
+      "frames": 62,
+      "perception_accuracy": 1.0,
+      "verified_effects": 61,
+      "metrics": {
+        "capture_p50_ms": 4.101116999663645,
+        "capture_p95_ms": 10.049948897358265,
+        "capture_p99_ms": 18.358656041527873,
+        "capture_mean_ms": 5.326020757967208,
+        "perception_p50_ms": 14.284950502769789,
+        "perception_p95_ms": 31.14427889886429,
+        "perception_p99_ms": 33.48813905198767,
+        "perception_mean_ms": 15.739368016276726,
+        "decision_p50_ms": 0.22894900030223653,
+        "decision_p95_ms": 5.143497000972275,
+        "decision_p99_ms": 12.07406920148059,
+        "decision_mean_ms": 1.103896262900919,
+        "control_p50_ms": 2.0575070011545904,
+        "control_p95_ms": 9.842927000136115,
+        "control_p99_ms": 21.08103959908476,
+        "control_mean_ms": 3.2692776226436675,
+        "end_to_end_p50_ms": 37.57400900212815,
+        "end_to_end_p95_ms": 62.72244199499255,
+        "end_to_end_p99_ms": 66.8735118000768,
+        "end_to_end_mean_ms": 39.01977019673633,
+        "engine_round_trip_p50_ms": 13.720878996537067,
+        "engine_round_trip_p95_ms": 33.446512003138196,
+        "engine_round_trip_p99_ms": 38.65598319971467,
+        "engine_round_trip_mean_ms": 16.259340492084807,
+        "rss_mb": 35.67578125,
+        "cpu_seconds": 1.2,
+        "cpu_percent": 28.82682732940865
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 138.640625,
+        "sampled_cpu_seconds": 2.81
+      }
+    },
+    {
+      "seed": 11,
+      "success": true,
+      "steps": 50,
+      "frames": 51,
+      "perception_accuracy": 1.0,
+      "verified_effects": 50,
+      "metrics": {
+        "capture_p50_ms": 4.796552995685488,
+        "capture_p95_ms": 20.0991734964191,
+        "capture_p99_ms": 25.038639996637357,
+        "capture_mean_ms": 6.686884823412744,
+        "perception_p50_ms": 14.416252997762058,
+        "perception_p95_ms": 28.405128501617583,
+        "perception_p99_ms": 33.51165050116833,
+        "perception_mean_ms": 15.048388235371414,
+        "decision_p50_ms": 0.1599214992893394,
+        "decision_p95_ms": 1.7742359999829196,
+        "decision_p99_ms": 3.823801949038165,
+        "decision_mean_ms": 0.5159818804531824,
+        "control_p50_ms": 1.6202375045395456,
+        "control_p95_ms": 6.032294503529555,
+        "control_p99_ms": 6.776179018852416,
+        "control_mean_ms": 2.259714320243802,
+        "end_to_end_p50_ms": 36.74685100122588,
+        "end_to_end_p95_ms": 61.55007809575181,
+        "end_to_end_p99_ms": 65.13063457925455,
+        "end_to_end_mean_ms": 37.33556763938395,
+        "engine_round_trip_p50_ms": 17.802985003072536,
+        "engine_round_trip_p95_ms": 39.63927525001054,
+        "engine_round_trip_p99_ms": 45.43770933334598,
+        "engine_round_trip_mean_ms": 19.372457500430755,
+        "rss_mb": 35.703125,
+        "cpu_seconds": 0.8800000000000001,
+        "cpu_percent": 22.96727980469003
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 138.796875,
+        "sampled_cpu_seconds": 2.1199999999999997
+      }
+    },
+    {
+      "seed": 19,
+      "success": true,
+      "steps": 56,
+      "frames": 57,
+      "perception_accuracy": 1.0,
+      "verified_effects": 56,
+      "metrics": {
+        "capture_p50_ms": 3.975917999923695,
+        "capture_p95_ms": 12.870169394591361,
+        "capture_p99_ms": 15.554236721072805,
+        "capture_mean_ms": 5.0717670880993335,
+        "perception_p50_ms": 14.126775997283403,
+        "perception_p95_ms": 38.345877395477146,
+        "perception_p99_ms": 50.81884243991226,
+        "perception_mean_ms": 16.955330947734694,
+        "decision_p50_ms": 0.15969599917298183,
+        "decision_p95_ms": 5.766517748270417,
+        "decision_p99_ms": 6.894881450352844,
+        "decision_mean_ms": 0.9963093751658951,
+        "control_p50_ms": 2.0201010011078324,
+        "control_p95_ms": 9.948875496775145,
+        "control_p99_ms": 20.61657814883803,
+        "control_mean_ms": 3.4682278927513317,
+        "end_to_end_p50_ms": 40.98993600200629,
+        "end_to_end_p95_ms": 73.38024099954055,
+        "end_to_end_p99_ms": 85.71032820218537,
+        "end_to_end_mean_ms": 42.500363964401394,
+        "engine_round_trip_p50_ms": 14.01989800069714,
+        "engine_round_trip_p95_ms": 40.70705649792217,
+        "engine_round_trip_p99_ms": 43.05891294716275,
+        "engine_round_trip_mean_ms": 18.407698285825195,
+        "rss_mb": 35.71875,
+        "cpu_seconds": 1.02,
+        "cpu_percent": 22.960719995082453
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 137.5625,
+        "sampled_cpu_seconds": 2.6900000000000004
+      }
+    },
+    {
+      "seed": 23,
+      "success": true,
+      "steps": 53,
+      "frames": 54,
+      "perception_accuracy": 1.0,
+      "verified_effects": 53,
+      "metrics": {
+        "capture_p50_ms": 3.059918999497313,
+        "capture_p95_ms": 9.361832499416789,
+        "capture_p99_ms": 18.620239469237266,
+        "capture_mean_ms": 4.2009888889475,
+        "perception_p50_ms": 8.073606000834843,
+        "perception_p95_ms": 21.361271298155774,
+        "perception_p99_ms": 25.442484643353964,
+        "perception_mean_ms": 10.164206888239951,
+        "decision_p50_ms": 0.25093099975492805,
+        "decision_p95_ms": 0.9602517966413869,
+        "decision_p99_ms": 1.2102898801094846,
+        "decision_mean_ms": 0.3516556415597047,
+        "control_p50_ms": 0.9627590043237433,
+        "control_p95_ms": 4.43100299744401,
+        "control_p99_ms": 11.775175479124256,
+        "control_mean_ms": 1.7016204334861371,
+        "end_to_end_p50_ms": 21.798276000481565,
+        "end_to_end_p95_ms": 38.08000180288217,
+        "end_to_end_p99_ms": 47.20229184284104,
+        "end_to_end_mean_ms": 24.05565488715063,
+        "engine_round_trip_p50_ms": 13.34194499941077,
+        "engine_round_trip_p95_ms": 37.24205000034998,
+        "engine_round_trip_p99_ms": 47.83139675884739,
+        "engine_round_trip_mean_ms": 16.856529660284615,
+        "rss_mb": 35.765625,
+        "cpu_seconds": 0.9199999999999999,
+        "cpu_percent": 28.888079041576326
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 137.5234375,
+        "sampled_cpu_seconds": 2.4799999999999995
+      }
+    },
+    {
+      "seed": 31,
+      "success": true,
+      "steps": 58,
+      "frames": 59,
+      "perception_accuracy": 1.0,
+      "verified_effects": 58,
+      "metrics": {
+        "capture_p50_ms": 3.0413409986067563,
+        "capture_p95_ms": 8.614817600027893,
+        "capture_p99_ms": 15.525055377220275,
+        "capture_mean_ms": 4.063551288154331,
+        "perception_p50_ms": 9.64384300459642,
+        "perception_p95_ms": 21.86651019801502,
+        "perception_p99_ms": 33.02582513686504,
+        "perception_mean_ms": 11.18138308515496,
+        "decision_p50_ms": 0.15820950284251012,
+        "decision_p95_ms": 4.552233754293411,
+        "decision_p99_ms": 4.678482733797864,
+        "decision_mean_ms": 0.6050179144949652,
+        "control_p50_ms": 1.2177025018900167,
+        "control_p95_ms": 9.0664557981654,
+        "control_p99_ms": 20.124599698465317,
+        "control_mean_ms": 2.865632758992684,
+        "end_to_end_p50_ms": 25.031267996382667,
+        "end_to_end_p95_ms": 45.85470640231506,
+        "end_to_end_p99_ms": 56.09756495396141,
+        "end_to_end_mean_ms": 27.158523758959653,
+        "engine_round_trip_p50_ms": 10.724527499405667,
+        "engine_round_trip_p95_ms": 18.484372105012874,
+        "engine_round_trip_p99_ms": 31.796406148787355,
+        "engine_round_trip_mean_ms": 10.855207517030568,
+        "rss_mb": 35.8125,
+        "cpu_seconds": 1.0200000000000005,
+        "cpu_percent": 37.426966270137164
+      },
+      "engine_resources": {
+        "sampled_peak_rss_mb": 137.125,
+        "sampled_cpu_seconds": 2.6399999999999997
+      }
+    }
+  ],
+  "raw_evidence": {
+    "path": ".uga/validation/godot-screen-final/results.json",
+    "sha256": "4d74ec6bdcc8d9a8ce6e43b73452370f0822512e63623a72702e97f4d232d315",
+    "size_bytes": 12758
+  },
+  "browser": {
+    "passed": true,
+    "browser": "154.0.8037.57",
+    "preview": {
+      "width": 160,
+      "height": 112
+    },
+    "page_errors": [],
+    "player_goal_verified": true,
+    "job_id": "b11e47a7-d7f3-4bdb-9787-cd1a59dd6f7a",
+    "builder_job_id": "ab11574c-2bc7-47ce-b050-091c52a9ba5d",
+    "analysis_job_id": "20f92e21-bc36-47b0-8c93-76dc03e86d3f",
+    "external_ai_connected": false,
+    "chromium_sandbox": true,
+    "locale": "ko-KR",
+    "timezone": "Asia/Seoul",
+    "viewports": [
+      [
+        1440,
+        1080
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "raw_evidence": {
+      "path": ".uga/validation/dashboard-all-agents/results.json",
+      "sha256": "0f55883bb486f1b3e6e79f94d7652fbf11c8529fd8eec74653e6055c1f2630a9",
+      "size_bytes": 366
+    },
+    "screenshots": [
+      {
+        "path": ".uga/validation/dashboard-all-agents/dashboard.png",
+        "sha256": "2528808e92611bdd89e490c23fe75474eca1ac97af633037a6c38ea90e1189b0",
+        "size_bytes": 112339
+      },
+      {
+        "path": ".uga/validation/dashboard-all-agents/dashboard-mobile.png",
+        "sha256": "093528b5aa7fe6b1174973b4d7ca819d2cc3b2694fb453ef54efa7ef9b83af1d",
+        "size_bytes": 186615
+      }
+    ]
+  },
+  "limitations": [
+    "UGA arena color profile only; general OCR/VLM not implemented",
+    "Pixel mode policy reads screenshot perception; engine truth is for evaluation/protocol",
+    "Own file input bridge; Windows SendInput is unverified",
+    "CPU soak and other validations shared this machine",
+    "GPU/VRAM not measured; software rendering used"
+  ]
+}

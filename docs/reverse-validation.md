@@ -21,7 +21,7 @@ APK fixture는 정적 분석을 위해 만든 ZIP/DEX 조합이며, plaintext ma
 ## 설치와 무결성
 
 모든 도구는 `.uga/tools/`에 설치했습니다. 시스템 기본 Java/Python이나 권한 설정은 바꾸지
-않았습니다. JSX/Ghidra 배포 ZIP은 공식 GitHub release의 SHA-256과 대조했습니다.
+않았습니다. JADX/Ghidra 배포 ZIP은 공식 GitHub release의 SHA-256과 대조했습니다.
 
 | 배포 파일 | 확인한 SHA-256 |
 |---|---|

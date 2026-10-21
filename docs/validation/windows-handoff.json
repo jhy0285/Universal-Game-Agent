@@ -1,0 +1,153 @@
+{
+  "recorded_at_utc": "2026-10-21T04:26:07.044117+00:00",
+  "source_commit": "c88cb2ac28e78f9511c03a13378e751871ceed23",
+  "source_python_tree_sha256": "a7d174f5122fa3603d256dc34c0a6dfd40a5fddf7fd4b9d55287909bd289defe",
+  "changes": [
+    "Capture-only desktop-check; preview and state evidence",
+    "Bounded start delay for manual game focus",
+    "Resolve client geometry after MSS DPI setup and before each capture; confine manual ROI",
+    "Start soak playback timer after source inventory and metadata writes"
+  ],
+  "local_full_test_matrix": [
+    {
+      "python": "3.11.17",
+      "platform": "Linux",
+      "tests": 88,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 43.487,
+      "junit": {
+        "path": ".uga/validation/windows-handoff-full311.xml",
+        "sha256": "342875c5096f06b9888ff82cb500c1d7a4101d0eda2c70752ebae76de7974826"
+      }
+    },
+    {
+      "python": "3.12.14",
+      "platform": "Linux",
+      "tests": 88,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 42.531,
+      "junit": {
+        "path": ".uga/validation/windows-handoff-full312.xml",
+        "sha256": "4142a8fc6aa68de2855f36ba329fa0600778385dea4238d43446067d258b0086"
+      }
+    }
+  ],
+  "github_ci": {
+    "url": "https://github.com/jhy0285/Universal-Game-Agent/actions/runs/39543689868",
+    "run_id": 39543689868,
+    "head_sha": "c88cb2ac28e78f9511c03a13378e751871ceed23",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 119036958650,
+        "name": "test (windows-latest, 3.12)",
+        "conclusion": "success"
+      },
+      {
+        "id": 119036958899,
+        "name": "test (windows-latest, 3.11)",
+        "conclusion": "success"
+      },
+      {
+        "id": 119036958903,
+        "name": "test (ubuntu-latest, 3.12)",
+        "conclusion": "success"
+      },
+      {
+        "id": 119036958965,
+        "name": "test (ubuntu-latest, 3.11)",
+        "conclusion": "success"
+      }
+    ],
+    "default_external_skips": 7,
+    "native_gui_input_tested": false
+  },
+  "previous_ci_failure": {
+    "run_id": 39532018756,
+    "job_id": 118999881677,
+    "test": "test_soak_records_real_milestones_and_refuses_stale_directory",
+    "regression_test": "test_soak_timer_starts_after_source_inventory",
+    "reproduced_before_fix": true,
+    "passed_after_fix": true
+  },
+  "screen": {
+    "backend": "godot-mss-pixels",
+    "passed": true,
+    "runs": [
+      {
+        "seed": 7,
+        "success": true,
+        "perception_accuracy": 1.0,
+        "verified_effects": 61
+      },
+      {
+        "seed": 11,
+        "success": true,
+        "perception_accuracy": 1.0,
+        "verified_effects": 50
+      },
+      {
+        "seed": 19,
+        "success": true,
+        "perception_accuracy": 1.0,
+        "verified_effects": 56
+      },
+      {
+        "seed": 23,
+        "success": true,
+        "perception_accuracy": 1.0,
+        "verified_effects": 53
+      },
+      {
+        "seed": 31,
+        "success": true,
+        "perception_accuracy": 1.0,
+        "verified_effects": 58
+      }
+    ],
+    "raw_evidence": {
+      "path": ".uga/validation/windows-handoff-screen/results.json",
+      "sha256": "cd0840bf08aba0aea3887990ed43e1d23f30965a53eb5fbdb7c555b169a43ce4"
+    }
+  },
+  "packaged_wheel": {
+    "sha256": "c394496be974c5d55f9b66f1151bb5da4278e9d8f5ad6761b3f04be788eb86c7",
+    "package_files_verified": 60,
+    "desktop_check_help": "passed from isolated installed package outside checkout",
+    "godot_workflow": true,
+    "raw_workflow": {
+      "path": ".uga/validation/windows-handoff-wheel-flow.json",
+      "sha256": "430a79388d9c9b1a8e345018aa57ce1eeb02d4312bbc9767d15ca3ea566c7e5a"
+    }
+  },
+  "continuous_16h": {
+    "status": "interrupted",
+    "run_id": "0a61fa43-c4d6-4ecc-9f3e-f7b9121767f0",
+    "source_commit": "0c62575",
+    "heartbeat": {
+      "run_id": "0a61fa43-c4d6-4ecc-9f3e-f7b9121767f0",
+      "episodes": 133639,
+      "failures": 0,
+      "elapsed_s": 37013.271627926995,
+      "rss_mb": 35.11328125,
+      "requested_s": 57600.0,
+      "completed_milestones_s": [
+        1800.0,
+        7200.0,
+        14400.0,
+        28800.0
+      ]
+    },
+    "summary": null,
+    "sixteen_hour_passed": false,
+    "milestone_semantics": "30m/2h/4h/8h cumulative prefixes passed before interruption",
+    "automatically_restarted": false
+  },
+  "native_windows_gui_input_verified": false,
+  "desktop_check_unit_test_scope": "Injected capture/backend fixtures, not an actual Windows game",
+  "guide": "../windows-testing.md"
+}

@@ -46,6 +46,10 @@ uv sync --frozen --extra capture --python 3.11 --no-python-downloads
 위 PID/좌표는 사용자가 자신의 환경에 맞게 입력해야 하는 예입니다. 입력은 foreground PID에
 묶이며 키/마우스 hold를 최대 250ms로 제한합니다. 포커스·프레임·인식 상태를 확인하고
 마지막에 모든 입력을 해제합니다. 마우스는 승인한 창의 client 영역만 허용합니다.
+`desktop-check`는 입력 없이 실제 캡처·인식 상태를 저장합니다. `desktop-play`와 함께
+`--start-delay`로 포커스 전환 시간을 설정할 수 있고, `--region`을 생략하면 MSS 초기화 후
+대상 창의 client 영역을 매 프레임 확인합니다. 수동 영역도 해당 client 안으로 제한합니다.
+[Windows 테스트 순서](windows-testing.md)에 실제 PowerShell 명령이 있습니다.
 프로파일은 정수 배율(최대 8배)의 UGA 아레나 화면만 인식합니다. 임의 게임의 OCR·VLM,
 캐릭터/인벤토리 인식이 동작한다고 주장하지 않습니다.
 

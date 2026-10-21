@@ -1,14 +1,15 @@
 # 단계별 구현 및 검증 현황
 
 검증 머신: **Linux / Python 3.11.17·3.12.14 / CPU / Godot 4.6.3**.
-2026-10-21 검증에서 두 Python 런타임 모두 **77개 테스트, 실패·오류·건너뜀 0개**입니다.
-코드 검증 기준 커밋은 `2325340`입니다. Windows 11 런타임과 원격 CI는 미실행입니다.
+기준선 `2325340`에서는 두 Python 런타임 모두 **77개 테스트, 실패·오류·건너뜀 0개**였습니다.
+후속 `c88cb2a`는 두 Linux Python에서 각각 **88개 테스트**가 통과했고, Windows/Linux의
+Python 3.11/3.12 GitHub CI 네 조합도 통과했습니다. Windows 실제 GUI 입력은 미검증입니다.
 수치는 [전체 결과](validation/results.json), [엔진](validation/godot.json),
 [분석 도구](validation/reverse.json), [실제 화면](validation/screen.json)에 있습니다.
 
 | PHASE | 상태 | 실제 구현·검증 | 남은 범위 |
 |---|---|---|---|
-| 0 Repository & Architecture | **완료: 기반 구현** | 설치 가능한 패키지, frozen lock, 7개 공통 계약, CLI/API, ADR·CI, Linux Python 3.11/3.12 실제 테스트 | Windows 런타임·원격 CI 미실행 |
+| 0 Repository & Architecture | **완료: 기반 구현** | 설치 가능한 패키지, frozen lock, 7개 공통 계약, CLI/API, ADR·CI, Linux Python 3.11/3.12 실제 테스트 및 Windows/Linux CI | Windows 실제 GUI 입력 미검증 |
 | 1 Local Test Game | **완료: 자체 아레나** | Godot 실제 import, 이동·벽·HP/아이템·인증 정지·전투/목표 6개 검사, 5개 시드 플레이 | Windows 창에서의 검증은 별도 |
 | 2 Player MVP | **완료: 자체 Linux 아레나 범위** | 실제 Godot 창 MSS 캡처→픽셀 인식→규칙/A*→자체 입력 브리지→효과 확인; 5개 시드 성공; 인식 정확도 100% | 실제 Windows MSS/SendInput, 일반 게임 인식 미검증 |
 | 3 Laya / VLM | **부분 완료** | 공식 API·메타데이터 조사, 정책 인터페이스, 별도 전략 프로세스와 fast 제어 분리 | 가중치 라이선스·무결성·실추론, OCR/VLM 및 모델 비교 미실행 |
@@ -26,17 +27,21 @@
 프레임·상태·준비 여부를 저장합니다. `desktop-play`는 기본 5초의 준비 시간을 제공하고,
 MSS의 DPI 초기화 뒤 대상 PID 창의 client 영역을 매 프레임 확인합니다.
 
-후속 로컬 회귀: Linux Python 3.12는 실제 Godot/JADX/Ghidra를 포함해 **88 passed**, Python
-3.11 기본 검사는 **81 passed / 외부 도구 7 skipped**입니다. 실제 Godot MSS 화면 플레이
+후속 로컬 회귀: Linux Python 3.11과 3.12 모두 실제 Godot/JADX/Ghidra를 포함해
+각각 **88 passed / 0 skipped**입니다. 기본 검사는 **81 passed / 외부 도구 7 skipped**입니다. 실제 Godot MSS 화면 플레이
 5개 시드도 다시 통과했습니다. Windows 실제 GUI/SendInput 검증은 사용자 PC에서 수행해야 합니다.
 GitHub CI에서 발견한 Windows/Python 3.12의 짧은 soak 실패는 초기 소스 점검이 실행 시간을
 소진하던 문제였습니다. 지연을 넣어 실패를 재현한 뒤 준비가 끝난 후 타이머를 시작하도록 수정했습니다.
+[수정본 CI](https://github.com/jhy0285/Universal-Game-Agent/actions/runs/39543689868)의 Windows/Linux
+× Python 3.11/3.12 네 조합이 모두 성공했습니다. 기본 CI는 외부 도구 검사 7개를 건너뜁니다.
+소스 해시·JUnit·실제 화면 회귀·패키지·CI·중단된 soak 기록은
+[windows-handoff.json](validation/windows-handoff.json)에 있습니다.
 
 기존 16시간 CPU 검사는 **중단 상태**입니다. 마지막 heartbeat는 37,013.272초(약 10시간
 16분), 133,639 에피소드·실패 0개이며, 현재 소유 프로세스와 최종 summary가 없습니다.
 30분·2/4/8시간 누적 구간 통과 기록은 보존하고 16시간 완료로 계산하지 않습니다.
 
-## 실제 실행과 재현
+## 실제 실행과 재현 (기준선 2325340)
 
 외부 도구는 사용자가 승인한 자체 프로젝트와 fixture에 한해 실행했습니다. 다음 명령은
 저장소 루트 기준이며, 재실행할 때 결과 경로는 새 경로로 지정해야 합니다.
@@ -68,7 +73,8 @@ uv build --python 3.12 --no-python-downloads
 Ruff lint·format, frozen lock, Node 24.19.0의 JavaScript 문법 검사를 통과했습니다.
 실제 Chromium에서도 Player, Builder의 Godot 검사, Reverse의 JADX 작업을 제출·완료했고,
 160×112 미리보기와 데스크톱/모바일 화면을 확인했습니다. uncaught JavaScript 오류는 0개입니다.
-REA와 공식 MCP SDK 검증은 별도 실행입니다. 원격 CI·실모델 검사는 미실행입니다.
+REA와 공식 MCP SDK 검증은 별도 실행입니다. 기준선 작성 당시 원격 CI·실모델 검사는
+미실행이었고, 이후 CI 통과는 위 후속 변경 절에 기록했습니다.
 
 HTTP에서 생성→분석→Godot 플레이와 아티팩트 **21개**, JADX/Ghidra 작업과 각각 **5개·3개**의
 크기·SHA-256을 확인했습니다. 서비스 시작 재사용·정지·재시작도 검사했습니다. wheel은 frozen

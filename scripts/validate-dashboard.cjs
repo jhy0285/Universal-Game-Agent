@@ -5,7 +5,8 @@ const path = require("node:path");
 const assert = require("node:assert/strict");
 const {values:args} = parseArgs({options:{
   playwright:{type:"string"}, browser:{type:"string"}, output:{type:"string"},
-  port:{type:"string",default:"8765"}, "allow-external-tools":{type:"boolean",default:false}
+  port:{type:"string",default:"8765"}, "allow-external-tools":{type:"boolean",default:false},
+  "state-dir":{type:"string",default:".uga"}
   , "analysis-fixture":{type:"string"}, "exercise-agents":{type:"boolean",default:false}
 }});
 async function main(){
@@ -20,8 +21,12 @@ async function main(){
     await context.route("**/*",route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
     const page=await context.newPage();
     page.on("pageerror",error=>errors.push(error.message));
-    await page.goto(origin,{waitUntil:"domcontentloaded"});
+    const token=(await fs.readFile(path.join(args["state-dir"],"api-token"),"utf8")).trim();
+    const html=await (await context.request.get(origin+"/")).text();
+    assert.equal(html.includes(token),false,"dashboard HTML must not embed the capability token");
+    await page.goto(`${origin}/#token=${encodeURIComponent(token)}`,{waitUntil:"domcontentloaded"});
     await page.waitForFunction(()=>document.querySelector("#connection").textContent.includes("로컬 연결됨"));
+    assert.equal(new URL(page.url()).hash,"","token fragment must be removed from the address bar");
     assert.equal(await page.locator("#run-godot").isChecked(),false);
     async function submit(selector){
       const response=page.waitForResponse(value=>value.url()===origin+"/api/v1/jobs"&&value.request().method()==="POST");

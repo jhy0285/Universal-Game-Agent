@@ -1,5 +1,13 @@
 "use strict";
-const token = document.querySelector('meta[name="uga-token"]').content;
+function readToken(){
+  // The capability token arrives once in the URL fragment, which is never sent to the server.
+  const fromURL=new URLSearchParams(location.hash.slice(1)).get("token");
+  try{
+    if(fromURL){sessionStorage.setItem("uga-token",fromURL);history.replaceState(null,"",location.pathname+location.search);return fromURL;}
+    return sessionStorage.getItem("uga-token")||"";
+  }catch{return fromURL||"";}
+}
+const token = readToken();
 const $ = id => document.getElementById(id);
 let selected = null, cursor = 0, polling = false, imageURL = null;
 const labels = {queued:"대기",running:"실행 중",succeeded:"완료",failed:"실패",cancelled:"취소",timed_out:"시간 초과"};
@@ -81,4 +89,5 @@ async function refresh(){
   if(polling)return;polling=true;
   try{const [jobs,system,events,experiments]=await Promise.all([api("jobs"),api("system"),api(`events?after=${cursor}`),api("experiments")]);renderJobs(jobs);renderEvents(events);renderExperiments(experiments);$("cpu").textContent=`${system.cpu_percent.toFixed(0)}%`;$("ram").textContent=`RAM ${system.ram_percent.toFixed(0)}%`;$("memory").textContent=`${system.rss_mb.toFixed(0)} MB`;$("connection").textContent=system.orchestrator_healthy?"● 로컬 연결됨":"● 감시 프로세스 오류";await updatePreview();}catch(e){$("connection").textContent="● 연결 오류";notice(e.message);}finally{polling=false;}
 }
-refresh();setInterval(refresh,1000);
+if(token){refresh();setInterval(refresh,1000);}
+else{$("connection").textContent="● 토큰 필요";notice("uga service status가 출력하는 dashboard_url로 대시보드를 여세요.");}

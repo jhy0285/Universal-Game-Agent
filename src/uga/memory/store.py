@@ -70,8 +70,14 @@ class Store:
             )
 
     def update_task(
-        self, task_id: str, status: TaskStatus, result: dict | None = None, error: str | None = None
+        self,
+        task_id: str,
+        status: TaskStatus,
+        result: dict | None = None,
+        error: str | None = None,
+        event: AgentEvent | None = None,
     ):
+        """Change status; an accompanying event commits in the same transaction."""
         with self.connect() as db:
             cursor = db.execute(
                 "UPDATE tasks SET status=?,result=?,error=?,updated=? WHERE id=?",
@@ -85,23 +91,45 @@ class Store:
             )
             if cursor.rowcount != 1:
                 raise KeyError(task_id)
+            if event is not None:
+                db.execute(
+                    "INSERT INTO events(task_id,payload) VALUES (?,?)",
+                    (event.task_id, event.model_dump_json()),
+                )
+
+    @staticmethod
+    def _decode_task(row):
+        value = dict(row)
+        for key in ("spec", "result"):
+            value[key] = json.loads(value[key]) if value[key] else None
+        return value
 
     def task(self, task_id: str):
         with self.connect() as db:
             row = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
         if row is None:
             raise KeyError(task_id)
-        value = dict(row)
-        for key in ("spec", "result"):
-            value[key] = json.loads(value[key]) if value[key] else None
-        return value
+        return self._decode_task(row)
 
-    def tasks(self, limit: int = 100):
+    def tasks(self, limit: int = 100, statuses: tuple[TaskStatus, ...] = ()):
+        """Newest tasks in one query, optionally restricted to the given statuses."""
+        where = f"WHERE status IN ({','.join('?' * len(statuses))})" if statuses else ""
         with self.connect() as db:
             rows = db.execute(
-                "SELECT id FROM tasks ORDER BY created DESC LIMIT ?", (limit,)
+                f"SELECT * FROM tasks {where} ORDER BY created DESC LIMIT ?",
+                (*statuses, limit),
             ).fetchall()
-        return [self.task(row["id"]) for row in rows]
+        return [self._decode_task(row) for row in rows]
+
+    def finished_without_checkpoint(self, prefix: str) -> list[str]:
+        """Finished task IDs that have no `prefix + task_id` checkpoint, oldest first."""
+        with self.connect() as db:
+            rows = db.execute(
+                "SELECT id FROM tasks WHERE status NOT IN (?,?) AND NOT EXISTS "
+                "(SELECT 1 FROM checkpoints WHERE name = ? || tasks.id) ORDER BY created",
+                (TaskStatus.QUEUED, TaskStatus.RUNNING, prefix),
+            ).fetchall()
+        return [row["id"] for row in rows]
 
     def append_event(self, event: AgentEvent):
         with self.connect() as db:

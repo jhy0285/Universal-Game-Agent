@@ -9,13 +9,13 @@ from uga.workflows import build_play, reverse_build_play
 
 
 @pytest.mark.external
-def test_godot_fixture_import_and_six_engine_rules(approved_godot, tmp_path):
+def test_godot_fixture_import_and_seven_engine_rules(approved_godot, tmp_path):
     source = Path(__file__).parents[1] / "test_games" / "godot"
     project = tmp_path / "fixture"
     shutil.copytree(source, project, ignore=shutil.ignore_patterns(".godot"))
     assert approved_godot.validate(project, approved=True)["imported"]
     result = approved_godot.smoke(project, tmp_path, approved=True)
-    assert result["checks"] == 6 and result["passed"] and not result["failures"]
+    assert result["checks"] == 7 and result["passed"] and not result["failures"]
 
 
 @pytest.mark.external

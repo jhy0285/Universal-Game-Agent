@@ -21,7 +21,7 @@ X 아이템, Space 점프, Escape 입력 정지를 지원합니다. 실제 실�
 .venv/bin/uga godot-export test_games/godot --preset Linux --output .uga/export/uga.x86_64 --allow-external-tools
 ```
 
-check는 실제 import/parse와 이번 실행 nonce를 가진 6개 smoke 검사를 요구합니다.
+check는 실제 import/parse와 이번 실행 nonce를 가진 7개 smoke 검사를 요구합니다.
 play는 별도 Godot 프로세스와 opt-in 파일 브리지를 통해 실제 엔진의 정답 상태를 읽고
 Python 정책이 조작합니다. **이 검사는 화면 인식 테스트가 아닙니다.** CPU 참조 픽셀 검증과
 Godot 정답 브리지 검증은 서로 다른 결과로 표시합니다. 별도 MSS 모드에서는 실제 Godot

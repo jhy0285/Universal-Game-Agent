@@ -47,5 +47,6 @@ Chromium **154.0.8037.57**, sandbox 활성화, 한국어/Asia-Seoul context에�
 node scripts/validate-dashboard.cjs --playwright /absolute/path/to/playwright-core --browser /usr/bin/chromium --allow-external-tools --exercise-agents --analysis-fixture .uga/validation/reverse-real/inputs/CombatRules.class --output .uga/dashboard-new
 ```
 
-브라우저 요청은 소유한 loopback 서버로 제한했습니다. 주기적 polling이 있는 화면이므로
+스크립트는 `--state-dir`(기본 `.uga`)의 토큰으로 `#token=` 주소를 열고, 페이지 HTML에 토큰이
+없고 주소창에서 토큰이 지워지는지도 확인합니다. 브라우저 요청은 소유한 loopback 서버로 제한했습니다. 주기적 polling이 있는 화면이므로
 network-idle 대신 실제 연결 상태와 이번에 제출한 작업의 완료를 readiness 조건으로 사용합니다.

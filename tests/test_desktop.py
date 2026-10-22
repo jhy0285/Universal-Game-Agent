@@ -156,3 +156,22 @@ def test_mss_closes_when_region_resolution_fails(monkeypatch):
     with pytest.raises(ValueError, match="positive"):
         MSSCapture({"left": 0, "top": 0, "width": 0, "height": 112})
     assert closed == [True]
+
+
+def test_windows_key_events_carry_scan_codes_for_physical_key_games():
+    import json
+    from pathlib import Path
+
+    import pytest
+
+    from uga.agents.player.controller import WINDOWS_KEYS, keyboard_fields
+    from uga.core.errors import SafetyStop
+
+    assert keyboard_fields("LEFT", False) == (0x25, 0x4B, 0x0001)
+    assert keyboard_fields("LEFT", True) == (0x25, 0x4B, 0x0003)
+    assert keyboard_fields("Z", False) == (0x5A, 0x2C, 0)
+    assert keyboard_fields("SPACE", True) == (0x20, 0x39, 0x0002)
+    with pytest.raises(SafetyStop):
+        keyboard_fields("F4", False)
+    actions = json.loads((Path(__file__).parents[1] / "configs/actions.json").read_text())
+    assert set(actions["actions"].values()) <= set(WINDOWS_KEYS)

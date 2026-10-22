@@ -122,18 +122,33 @@ class GuardedController:
             self.release_all()
 
 
+KEYEVENTF_EXTENDEDKEY = 0x0001
+KEYEVENTF_KEYUP = 0x0002
+# Virtual key, set-1 scan code and extended flag. Games that read physical keys (the
+# UGA Godot arena uses is_physical_key_pressed) see the scan code, not the virtual key,
+# and arrow keys without the extended flag arrive as numeric keypad keys.
+WINDOWS_KEYS = {
+    "LEFT": (0x25, 0x4B, True),
+    "UP": (0x26, 0x48, True),
+    "RIGHT": (0x27, 0x4D, True),
+    "DOWN": (0x28, 0x50, True),
+    "SPACE": (0x20, 0x39, False),
+    "Z": (0x5A, 0x2C, False),
+    "X": (0x58, 0x2D, False),
+}
+
+
+def keyboard_fields(key: str, up: bool) -> tuple[int, int, int]:
+    """KEYBDINPUT wVk, wScan and dwFlags for an allowlisted key."""
+    if key not in WINDOWS_KEYS:
+        raise SafetyStop("key is not allowlisted")
+    vk, scan, extended = WINDOWS_KEYS[key]
+    flags = (KEYEVENTF_EXTENDEDKEY if extended else 0) | (KEYEVENTF_KEYUP if up else 0)
+    return vk, scan, flags
+
+
 class WindowsInputBackend:
     """Windows SendInput with foreground PID binding; no game process memory access."""
-
-    VK = {
-        "LEFT": 0x25,
-        "UP": 0x26,
-        "RIGHT": 0x27,
-        "DOWN": 0x28,
-        "SPACE": 0x20,
-        "Z": 0x5A,
-        "X": 0x58,
-    }
 
     def __init__(self, target_pid: int, *, approved: bool = False):
         import sys
@@ -217,11 +232,10 @@ class WindowsInputBackend:
         return {"left": origin.x, "top": origin.y, "width": width, "height": height}
 
     def _key(self, key, up):
-        if key not in self.VK:
-            raise SafetyStop("key is not allowlisted")
+        fields = keyboard_fields(key, up)
         if not up and not self.is_target_focused():
             raise SafetyStop("target lost focus")
-        event = self.Input(type=1, ki=self.Keyboard(self.VK[key], 0, 2 if up else 0, 0, 0))
+        event = self.Input(type=1, ki=self.Keyboard(*fields, 0, 0))
         if self.user32.SendInput(1, self.ctypes.byref(event), self.ctypes.sizeof(event)) != 1:
             raise OSError(self.ctypes.get_last_error(), "SendInput failed")
 

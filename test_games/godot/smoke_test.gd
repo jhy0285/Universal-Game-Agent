@@ -27,6 +27,13 @@ func run_checks() -> void:
     var before: Vector2 = arena.player
     check(not arena.step("move_right") and arena.player == before, "authentication pause failed")
     arena.auth_required = false
+    var tap := InputEventKey.new()
+    tap.physical_keycode = KEY_RIGHT
+    tap.pressed = true
+    arena._unhandled_input(tap)
+    arena._physics_process(0.1)
+    arena._physics_process(0.1)
+    check(arena.player == before + Vector2(4, 0), "released key tap was not applied exactly once")
     arena.enemies = [Vector2(32, 92)]
     check(arena.step("attack") and arena.won(), "combat/goal failed")
     var report_path: String = ""
@@ -37,7 +44,7 @@ func run_checks() -> void:
         if arg.begins_with("--uga-run-id="):
             run_id = arg.trim_prefix("--uga-run-id=")
     if not report_path.is_empty():
-        arena.write_json(report_path, {"run_id": run_id, "checks": 6, "passed": failures.is_empty(), "failures": failures})
+        arena.write_json(report_path, {"run_id": run_id, "checks": 7, "passed": failures.is_empty(), "failures": failures})
     if not failures.is_empty():
         printerr(JSON.stringify(failures))
     arena.queue_free()

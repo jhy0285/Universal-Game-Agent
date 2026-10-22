@@ -1,5 +1,7 @@
+import os
 import secrets
 import sqlite3
+import tempfile
 from contextlib import asynccontextmanager
 from importlib.resources import files
 from pathlib import Path
@@ -14,7 +16,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from uga import __version__
 from uga.capabilities import capabilities
-from uga.core.contracts import CONTRACTS, EvaluationResult, TaskSpec
+from uga.core.contracts import CONTRACTS, EvaluationResult, TaskSpec, TaskStatus
 from uga.core.errors import AuthorizationRequired, UGAError
 from uga.evaluation.experiments import ExperimentManager
 from uga.integrations.registry import AgentRegistry
@@ -32,6 +34,18 @@ class ApprovalRequest(BaseModel):
     approved: bool = False
 
 
+def write_private(path: Path, text: str):
+    """Replace a secret file atomically; mkstemp creates it owner-only on POSIX."""
+    fd, name = tempfile.mkstemp(prefix=".uga-token-", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(text)
+        os.replace(name, path)
+    finally:
+        if os.path.exists(name):
+            os.unlink(name)
+
+
 def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -> FastAPI:
     root = (root or Path(".uga")).resolve()
 
@@ -40,9 +54,7 @@ def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -
         jobs = Orchestrator(root, analysis_root=analysis_root)
         app.state.jobs = jobs
         app.state.token = secrets.token_urlsafe(32)
-        token_path = root / "api-token"
-        token_path.write_text(app.state.token, encoding="utf-8")
-        token_path.chmod(0o600)
+        write_private(root / "api-token", app.state.token)
         app.state.process = psutil.Process()
         app.state.process.cpu_percent()
         try:
@@ -114,15 +126,12 @@ def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def dashboard():
-        return (
-            (static / "index.html")
-            .read_text(encoding="utf-8")
-            .replace("{{UGA_TOKEN}}", app.state.token)
-        )
+        # The page carries no secret; the token arrives in the URL fragment from `uga service`.
+        return (static / "index.html").read_text(encoding="utf-8")
 
     @app.get("/docs", response_class=HTMLResponse, include_in_schema=False)
     def docs():
-        return '<!doctype html><html lang="en"><meta charset="utf-8"><title>UGA API v1</title><link rel="stylesheet" href="/static/style.css"><main><h1>UGA API v1</h1><p>Local, versioned agent jobs.</p><p><a href="/openapi.json">OpenAPI schema</a> · <a href="/api/v1/contracts">Wire contracts</a> · <a href="/">Dashboard</a></p><p>Send X-UGA-Token or Authorization: Bearer with the local token from the state directory api-token file. Tokens rotate at server startup. Never commit or share this file.</p><p>POST /api/v1/jobs → GET /api/v1/jobs/{id} → POST /api/v1/jobs/{id}/cancel</p><p>The server only runs registered operations. Builder build and Godot workflows require authorized=true and only execute the generated original UGA project. Export requires a matching installed Godot template.</p></main></html>'
+        return '<!doctype html><html lang="en"><meta charset="utf-8"><title>UGA API v1</title><link rel="stylesheet" href="/static/style.css"><main><h1>UGA API v1</h1><p>Local, versioned agent jobs.</p><p><a href="/openapi.json">OpenAPI schema</a> · <a href="/api/v1/contracts">Wire contracts</a> · <a href="/">Dashboard</a></p><p>Send X-UGA-Token or Authorization: Bearer with the local token from the state directory api-token file. Open the dashboard with the dashboard_url printed by uga service start or uga service status. Tokens rotate at server startup. Never commit or share this file.</p><p>POST /api/v1/jobs → GET /api/v1/jobs/{id} → POST /api/v1/jobs/{id}/cancel</p><p>The server only runs registered operations. Builder build and Godot workflows require authorized=true and only execute the generated original UGA project. Export requires a matching installed Godot template.</p></main></html>'
 
     @app.get("/health")
     def health():
@@ -183,10 +192,9 @@ def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -
     @app.post("/api/v1/stop")
     def stop_all():
         stopped = []
-        for row in app.state.jobs.store.tasks(100):
-            if row["status"] in ("running", "queued"):
-                app.state.jobs.cancel(row["id"])
-                stopped.append(row["id"])
+        for row in app.state.jobs.store.tasks(100, (TaskStatus.RUNNING, TaskStatus.QUEUED)):
+            app.state.jobs.cancel(row["id"])
+            stopped.append(row["id"])
         return {"cancelled": stopped}
 
     @app.get("/api/v1/events")
@@ -211,38 +219,12 @@ def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -
         row = app.state.jobs.store.task(task_id)
         if row["status"] in ("queued", "running"):
             return []
-        store = app.state.jobs.store
-        name = "job-artifacts:" + task_id
-        saved = store.load_checkpoint(name)
-        if saved:
-            return saved["artifacts"]
-        base = root / "jobs" / row["id"]
-        result = []
-        for path in sorted(base.rglob("*"))[:300]:
-            if (
-                path.is_file()
-                and not path.is_symlink()
-                and path.suffix
-                in (".json", ".png", ".log", ".gd", ".java", ".c", ".h", ".tscn", ".godot", ".cfg")
-                and path.stat().st_size <= 8_000_000
-            ):
-                content_type = (
-                    "image/png"
-                    if path.suffix == ".png"
-                    else "application/json"
-                    if path.suffix == ".json"
-                    else "text/plain"
-                )
-                ref = store.put_artifact(
-                    path.read_bytes(),
-                    content_type,
-                    "png" if path.suffix == ".png" else "json" if path.suffix == ".json" else "txt",
-                )
-                result.append(
-                    {"name": str(path.relative_to(base)), "reference": ref.model_dump(mode="json")}
-                )
-        store.checkpoint(name, {"artifacts": result})
-        return result
+        try:
+            return app.state.jobs.artifacts(task_id)
+        except TimeoutError:
+            raise HTTPException(
+                503, "artifacts are still being sealed", headers={"Retry-After": "1"}
+            ) from None
 
     @app.get("/api/v1/artifacts/{artifact_id}")
     def artifact(artifact_id: str):

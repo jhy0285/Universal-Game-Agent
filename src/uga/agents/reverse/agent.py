@@ -12,6 +12,10 @@ from uga.memory.store import atomic_json
 MAX_FILE = 32 * 1024 * 1024
 MAX_TOTAL = 64 * 1024 * 1024
 MAX_FILES = 2048
+# Recorded evidence is bounded so the full input budget fits a 512 MB worker; counts stay exact.
+MAX_RECORDED_SYMBOLS = 20_000
+MAX_RECORDED_CALL_SITES = 50_000
+MAX_FUNCTION_FINDINGS = 2_000
 SKIP = {".git", ".godot", ".uga", ".venv", "node_modules", "__pycache__"}
 TEXT = {".gd", ".cs", ".java", ".py", ".json", ".tscn", ".xml", ".cfg", ".txt"}
 
@@ -30,7 +34,7 @@ def _read(path: Path) -> bytes:
     return data
 
 
-def analyze(path: Path, output: Path, *, authorized: bool = False) -> GameSpec:
+def analyze(path: Path, output: Path, *, authorized: bool = False, heartbeat=None) -> GameSpec:
     if not authorized:
         raise AuthorizationRequired(
             "Confirm that you own or have permission to analyze this target"
@@ -61,7 +65,11 @@ def analyze(path: Path, output: Path, *, authorized: bool = False) -> GameSpec:
     declared_specs = []
     structure = []
     total = 0
+    totals = {"classes": 0, "functions": 0, "syntactic_call_sites": 0}
+    recorded = {"symbols": 0, "call_sites": 0, "function_findings": 0}
     for source in sources:
+        if heartbeat:
+            heartbeat()
         data = _read(source)
         total += len(data)
         if total > MAX_TOTAL:
@@ -147,7 +155,10 @@ def analyze(path: Path, output: Path, *, authorized: bool = False) -> GameSpec:
             classes = []
             functions = []
             calls = []
+            counts = {"classes": 0, "functions": 0, "syntactic_call_sites": 0}
             for number, line in enumerate(text.splitlines(), 1):
+                if heartbeat and number % 4096 == 0:
+                    heartbeat()
                 c = re.search(
                     r"^\s*(?:(?:public|private|protected|static|final|abstract|sealed|partial)\s+)*(?:class_name|class|interface|enum|record)\s+(\w+)",
                     line,
@@ -159,12 +170,36 @@ def analyze(path: Path, output: Path, *, authorized: bool = False) -> GameSpec:
                         line,
                     )
                 if c:
-                    classes.append({"name": c.group(1), "line": number})
+                    counts["classes"] += 1
+                    if recorded["symbols"] < MAX_RECORDED_SYMBOLS:
+                        recorded["symbols"] += 1
+                        classes.append({"name": c.group(1), "line": number})
                 if f:
-                    functions.append({"name": f.group(1), "line": number})
-                calls.extend(
-                    {"name": n, "line": number} for n in re.findall(r"\b(\w+)\s*\(", line)[:30]
-                )
+                    counts["functions"] += 1
+                    if recorded["symbols"] < MAX_RECORDED_SYMBOLS:
+                        recorded["symbols"] += 1
+                        functions.append({"name": f.group(1), "line": number})
+                    if recorded["function_findings"] < MAX_FUNCTION_FINDINGS:
+                        recorded["function_findings"] += 1
+                        findings.append(
+                            Finding(
+                                subject=f.group(1),
+                                statement="Source function declaration",
+                                source=f"{origin}:{number}",
+                                confidence=1,
+                            )
+                        )
+                names = re.findall(r"\b(\w+)\s*\(", line)[:30]
+                counts["syntactic_call_sites"] += len(names)
+                for n in names[: max(0, MAX_RECORDED_CALL_SITES - recorded["call_sites"])]:
+                    recorded["call_sites"] += 1
+                    calls.append({"name": n, "line": number})
+            truncated = (
+                len(classes) < counts["classes"]
+                or len(functions) < counts["functions"]
+                or len(calls) < counts["syntactic_call_sites"]
+            )
+            totals = {key: totals[key] + counts[key] for key in totals}
             structure.append(
                 {
                     "source": relative,
@@ -172,18 +207,11 @@ def analyze(path: Path, output: Path, *, authorized: bool = False) -> GameSpec:
                     "classes": classes,
                     "functions": functions,
                     "syntactic_call_sites": calls,
+                    "counts": counts,
+                    "truncated": truncated,
                     "semantic_resolution": False,
                 }
             )
-            for f in functions:
-                findings.append(
-                    Finding(
-                        subject=f["name"],
-                        statement="Source function declaration",
-                        source=f"{origin}:{f['line']}",
-                        confidence=1,
-                    )
-                )
         else:
             kind = (
                 "ELF"
@@ -193,6 +221,26 @@ def analyze(path: Path, output: Path, *, authorized: bool = False) -> GameSpec:
                 else "unknown"
             )
             structure.append({"source": relative, "kind": kind, "disassembled": False})
+    truncated = (
+        recorded["symbols"] < totals["classes"] + totals["functions"]
+        or recorded["call_sites"] < totals["syntactic_call_sites"]
+        or recorded["function_findings"] < totals["functions"]
+    )
+    if truncated:
+        findings.append(
+            Finding(
+                subject="analysis limits",
+                statement=(
+                    f"Recorded {recorded['function_findings']} of {totals['functions']} function "
+                    f"declaration findings, {recorded['symbols']} of "
+                    f"{totals['classes'] + totals['functions']} class/function entries and "
+                    f"{recorded['call_sites']} of {totals['syntactic_call_sites']} call sites; "
+                    "counts are complete, omitted entries are not evidence of absence"
+                ),
+                source="uga-static-analysis/limits",
+                confidence=1,
+            )
+        )
     spec = GameSpec(
         name=(path.stem or "sample")[:100],
         findings=findings,
@@ -213,6 +261,13 @@ def analyze(path: Path, output: Path, *, authorized: bool = False) -> GameSpec:
     atomic_json(output / "game-spec.json", spec.model_dump(mode="json"))
     atomic_json(
         output / "structure.json",
-        {"sources": structure, "executed_samples": False, "total_bytes": total},
+        {
+            "sources": structure,
+            "executed_samples": False,
+            "total_bytes": total,
+            "counts": totals,
+            "recorded": recorded,
+            "truncated": truncated,
+        },
     )
     return spec

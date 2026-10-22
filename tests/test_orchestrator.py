@@ -59,3 +59,36 @@ def test_watchdog_checks_roles_separately_and_stale_heartbeats():
     health = watchdog.inspect(now=now)
     assert health["game"]["healthy"]
     assert health["inference"]["reason"] == "heartbeat_timeout"
+
+
+def test_soak_timeout_defaults_to_its_duration_but_respects_explicit_values(tmp_path):
+    with Orchestrator(tmp_path) as jobs:
+        derived = jobs.submit(TaskSpec(agent="player", operation="soak"))
+        assert derived["spec"]["timeout_s"] == 1800 + 60
+        explicit = jobs.submit(
+            TaskSpec(agent="player", operation="soak", parameters={"seconds": 60}, timeout_s=5)
+        )
+        assert explicit["spec"]["timeout_s"] == 5
+        jobs.cancel(derived["id"])
+        jobs.cancel(explicit["id"])
+
+
+def test_artifacts_are_sealed_when_a_job_finishes_and_for_older_jobs(tmp_path):
+    from uga.memory.store import Store
+
+    with Orchestrator(tmp_path) as jobs:
+        spec = TaskSpec(agent="player", operation="play")
+        jobs.submit(spec)
+        assert wait_job(jobs, spec.task_id)["status"] == TaskStatus.SUCCEEDED
+        listing = jobs.artifacts(spec.task_id)
+        assert any(entry["name"] == "result.json" for entry in listing)
+        assert jobs.artifacts(spec.task_id) == listing
+    store = Store(tmp_path)
+    older = TaskSpec(agent="player", operation="play")
+    store.create_task(older)
+    store.update_task(older.task_id, TaskStatus.SUCCEEDED, {"success": True})
+    (tmp_path / "jobs" / older.task_id).mkdir(parents=True)
+    (tmp_path / "jobs" / older.task_id / "result.json").write_text("{}")
+    with Orchestrator(tmp_path) as jobs:
+        assert [entry["name"] for entry in jobs.artifacts(older.task_id)] == ["result.json"]
+        assert jobs.artifacts(spec.task_id) == listing

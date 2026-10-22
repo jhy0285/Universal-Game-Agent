@@ -3,6 +3,7 @@ import os
 import threading
 import time
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -10,9 +11,44 @@ import psutil
 
 from uga.core.contracts import AgentEvent, TaskSpec, TaskStatus
 from uga.core.errors import UGAError
+from uga.evaluation.experiments import with_active_policy
 from uga.memory.store import Store
-from uga.orchestrator.worker import execute_task, validate_task
+from uga.orchestrator.worker import SoakParameters, execute_task, validate_task
 from uga.supervisor.health import Watchdog
+
+SOAK_TIMEOUT_MARGIN_S = 60
+ARTIFACTS_PREFIX = "job-artifacts:"
+ARTIFACT_SUFFIXES = (".json", ".png", ".log", ".gd", ".java", ".c", ".h", ".tscn", ".godot", ".cfg")
+
+
+def seal_job_artifacts(store: Store, base: Path) -> list[dict]:
+    """Copy a finished job's evidence files into the content-addressed artifact store."""
+    result = []
+    if not base.is_dir():
+        return result
+    for path in sorted(base.rglob("*"))[:300]:
+        if (
+            path.is_file()
+            and not path.is_symlink()
+            and path.suffix in ARTIFACT_SUFFIXES
+            and path.stat().st_size <= 8_000_000
+        ):
+            content_type = (
+                "image/png"
+                if path.suffix == ".png"
+                else "application/json"
+                if path.suffix == ".json"
+                else "text/plain"
+            )
+            ref = store.put_artifact(
+                path.read_bytes(),
+                content_type,
+                "png" if path.suffix == ".png" else "json" if path.suffix == ".json" else "txt",
+            )
+            result.append(
+                {"name": str(path.relative_to(base)), "reference": ref.model_dump(mode="json")}
+            )
+    return result
 
 
 @dataclass
@@ -53,15 +89,20 @@ class Orchestrator:
         self.started = {}
         self._lock = threading.RLock()
         self._stop = threading.Event()
+        # Evidence is sealed once per finished job, off the monitor thread.
+        self._sealer = ThreadPoolExecutor(max_workers=1, thread_name_prefix="uga-artifact-sealer")
+        self._sealing = {}
+        self._seal_lock = threading.Lock()
         self.lock_path = self.root / "orchestrator.lock"
         self._acquire()
-        for row in self.store.tasks(limit=100000):
-            if row["status"] in (TaskStatus.QUEUED, TaskStatus.RUNNING):
-                self.store.update_task(
-                    row["id"],
-                    TaskStatus.FAILED,
-                    error="interrupted by previous process shutdown; resubmit explicitly",
-                )
+        for row in self.store.tasks(100000, (TaskStatus.QUEUED, TaskStatus.RUNNING)):
+            self.store.update_task(
+                row["id"],
+                TaskStatus.FAILED,
+                error="interrupted by previous process shutdown; resubmit explicitly",
+            )
+        for task_id in self.store.finished_without_checkpoint(ARTIFACTS_PREFIX):
+            self._seal(task_id)
         self.thread = threading.Thread(target=self._monitor, daemon=True, name="uga-job-monitor")
         self.thread.start()
 
@@ -85,31 +126,28 @@ class Orchestrator:
             self._owner.close()
             raise UGAError("an orchestrator already owns this state directory") from None
 
-    def _event(self, spec, event, message, level="info", **data):
-        self.store.append_event(
-            AgentEvent(
-                task_id=spec.task_id,
-                agent=spec.agent,
-                event=event,
-                message=message,
-                level=level,
-                data=data,
-            )
+    @staticmethod
+    def _make_event(spec, event, message, level="info", **data):
+        return AgentEvent(
+            task_id=spec.task_id,
+            agent=spec.agent,
+            event=event,
+            message=message,
+            level=level,
+            data=data,
         )
+
+    def _event(self, spec, event, message, level="info", **data):
+        self.store.append_event(self._make_event(spec, event, message, level, **data))
 
     def submit(self, spec: TaskSpec):
         spec = spec.model_copy(deep=True)
-        if (
-            spec.agent == "player"
-            and spec.operation == "play"
-            and "attack_range" not in spec.parameters
-        ):
-            active = self.store.load_checkpoint("active-policy")
-            if active:
-                spec.parameters["attack_range"] = active["attack_range"]
-                spec.parameters.setdefault(
-                    "navigation_mode", active.get("navigation_mode", "euclidean")
-                )
+        if spec.agent == "player" and spec.operation == "play":
+            spec.parameters = with_active_policy(self.store, spec.parameters)
+        if spec.operation == "soak" and "timeout_s" not in spec.model_fields_set:
+            # A soak runs for its requested duration; the generic 120 s default would end it early.
+            seconds = SoakParameters.model_validate(spec.parameters).seconds
+            spec.timeout_s = seconds + SOAK_TIMEOUT_MARGIN_S
         validate_task(spec)
         with self._lock:
             if self._stop.is_set():
@@ -171,13 +209,44 @@ class Orchestrator:
     def _finish(self, run, status, result=None, error=None):
         self._terminate(run)
         self.running.pop(run.spec.task_id, None)
-        self.store.update_task(run.spec.task_id, status, result, error)
-        self._event(
-            run.spec,
-            status.value,
-            error or "job completed",
-            level="error" if status == TaskStatus.FAILED else "info",
+        # A reader that sees the terminal status also sees its terminal event.
+        self.store.update_task(
+            run.spec.task_id,
+            status,
+            result,
+            error,
+            event=self._make_event(
+                run.spec,
+                status.value,
+                error or "job completed",
+                level="error" if status == TaskStatus.FAILED else "info",
+            ),
         )
+        self._seal(run.spec.task_id)
+
+    def _seal(self, task_id):
+        with self._seal_lock:
+            future = self._sealing.get(task_id)
+            if future is None:
+                future = self._sealer.submit(self._seal_now, task_id)
+                self._sealing[task_id] = future
+                future.add_done_callback(lambda _: self._sealing.pop(task_id, None))
+            return future
+
+    def _seal_now(self, task_id):
+        name = ARTIFACTS_PREFIX + task_id
+        if self.store.load_checkpoint(name) is None:
+            listing = seal_job_artifacts(self.store, self.root / "jobs" / task_id)
+            self.store.checkpoint(name, {"artifacts": listing})
+
+    def artifacts(self, task_id, timeout_s=30):
+        """Sealed evidence of a finished job; waits briefly for a seal still in progress."""
+        saved = self.store.load_checkpoint(ARTIFACTS_PREFIX + task_id)
+        if saved is None:
+            # Retries a seal that failed or was interrupted; a completed seal is never redone.
+            self._seal(task_id).result(timeout_s)
+            saved = self.store.load_checkpoint(ARTIFACTS_PREFIX + task_id)
+        return saved["artifacts"]
 
     def _tick(self):
         for task_id, run in list(self.running.items()):
@@ -231,6 +300,7 @@ class Orchestrator:
                 self.store.update_task(
                     spec.task_id, TaskStatus.FAILED, error=f"worker startup: {exc}"
                 )
+                self._seal(spec.task_id)
 
     def _monitor(self):
         while not self._stop.wait(0.05):
@@ -246,8 +316,12 @@ class Orchestrator:
             for spec in list(self.pending):
                 if spec.task_id == task_id:
                     self.pending.remove(spec)
-                    self.store.update_task(task_id, TaskStatus.CANCELLED)
-                    self._event(spec, "cancelled", "queued job cancelled")
+                    self.store.update_task(
+                        task_id,
+                        TaskStatus.CANCELLED,
+                        event=self._make_event(spec, "cancelled", "queued job cancelled"),
+                    )
+                    self._seal(task_id)
                     return self.store.task(task_id)
             if task_id in self.running:
                 self._finish(self.running[task_id], TaskStatus.CANCELLED, error="cancelled by user")
@@ -261,7 +335,9 @@ class Orchestrator:
                 self.cancel(task_id)
             for spec in list(self.pending):
                 self.cancel(spec.task_id)
-            self._owner.close()
+        # Unstarted seals are cancelled; the next owner seals them at startup.
+        self._sealer.shutdown(wait=True, cancel_futures=True)
+        self._owner.close()
 
     def __enter__(self):
         return self

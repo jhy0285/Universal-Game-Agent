@@ -42,7 +42,12 @@ def analyze_with_tool(
             trusted_input=True,
             heartbeat=heartbeat,
         )
-        spec = analyze(output / "decompiled" / "sources", output / "structure", authorized=True)
+        spec = analyze(
+            output / "decompiled" / "sources",
+            output / "structure",
+            authorized=True,
+            heartbeat=heartbeat,
+        )
         for finding in spec.findings:
             finding.source = origin + ":" + finding.source
         spec.name = sample.stem[:100] or "JADX sample"

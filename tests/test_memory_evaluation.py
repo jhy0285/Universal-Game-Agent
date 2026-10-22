@@ -105,3 +105,32 @@ def test_real_benchmark_and_soak_execute_episodes(tmp_path):
     assert report.metrics["success_rate"] == 1
     summary = run_soak(0.1, tmp_path / "soak")
     assert summary["episodes"] > 0 and summary["elapsed_s"] >= 0.1 and summary["passed"]
+
+
+def test_active_policy_fills_each_unspecified_parameter(tmp_path):
+    from uga.evaluation.experiments import with_active_policy
+
+    store = Store(tmp_path)
+    assert with_active_policy(store, {"seed": 7}) == {"seed": 7}
+    store.checkpoint(
+        "active-policy", {"policy": "rule", "attack_range": 8, "navigation_mode": "geodesic"}
+    )
+    assert with_active_policy(store, {"attack_range": 14}) == {
+        "attack_range": 14,
+        "navigation_mode": "geodesic",
+    }
+
+
+def test_task_listing_filters_status_in_one_query(tmp_path):
+    from uga.core.contracts import TaskSpec, TaskStatus
+
+    store = Store(tmp_path)
+    specs = [TaskSpec(agent="player", operation="play") for _ in range(3)]
+    for spec in specs:
+        store.create_task(spec)
+    store.update_task(specs[0].task_id, TaskStatus.SUCCEEDED, {"success": True})
+    assert {row["id"] for row in store.tasks()} == {spec.task_id for spec in specs}
+    assert store.tasks()[-1]["result"] == {"success": True}
+    queued = store.tasks(statuses=(TaskStatus.QUEUED,))
+    assert {row["id"] for row in queued} == {specs[1].task_id, specs[2].task_id}
+    assert store.finished_without_checkpoint("job-artifacts:") == [specs[0].task_id]

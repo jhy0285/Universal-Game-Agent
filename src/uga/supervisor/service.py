@@ -61,7 +61,14 @@ class ServiceManager:
             pass
         finally:
             connection.close()
-        return {"running": True, "healthy": healthy, "pid": process.pid, "port": value["port"]}
+        result = {"running": True, "healthy": healthy, "pid": process.pid, "port": value["port"]}
+        token = self.root / "api-token"
+        if healthy and token.is_file():
+            # The fragment stays in the browser; the dashboard HTML itself carries no token.
+            result["dashboard_url"] = (
+                f"http://127.0.0.1:{value['port']}/#token={token.read_text(encoding='utf-8')}"
+            )
+        return result
 
     def start(self, port=8765):
         if not 1024 <= port <= 65535:

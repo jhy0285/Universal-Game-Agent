@@ -97,3 +97,27 @@ def test_engine_workflow_requires_approval_before_generation(tmp_path):
             validate_task(task)
         task.authorized = True
         validate_task(task)
+
+
+def test_static_analysis_bounds_recorded_evidence_and_keeps_heartbeat(tmp_path, monkeypatch):
+    import uga.agents.reverse.agent as agent
+
+    monkeypatch.setattr(agent, "MAX_RECORDED_SYMBOLS", 4)
+    monkeypatch.setattr(agent, "MAX_RECORDED_CALL_SITES", 5)
+    monkeypatch.setattr(agent, "MAX_FUNCTION_FINDINGS", 3)
+    sample = tmp_path / "sample"
+    sample.mkdir()
+    (sample / "Rules.java").write_text(
+        "".join(f"    public static int rule{i}(int a) {{ return a; }}\n" for i in range(10))
+    )
+    beats = []
+    spec = analyze(sample, tmp_path / "out", authorized=True, heartbeat=lambda: beats.append(1))
+    structure = json.loads((tmp_path / "out" / "structure.json").read_text())
+    assert beats and structure["truncated"]
+    assert structure["counts"]["functions"] == 10
+    assert structure["recorded"] == {"symbols": 4, "call_sites": 5, "function_findings": 3}
+    source = structure["sources"][0]
+    assert source["counts"]["functions"] == 10 and len(source["functions"]) == 4
+    assert source["truncated"] and len(source["syntactic_call_sites"]) == 5
+    assert sum(f.statement == "Source function declaration" for f in spec.findings) == 3
+    assert any(f.subject == "analysis limits" for f in spec.findings)

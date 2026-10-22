@@ -88,7 +88,7 @@ class GodotAdapter:
         data = json.loads(report.read_text(encoding="utf-8"))
         if (
             data.get("run_id") != run_id
-            or data.get("checks", 0) < 6
+            or data.get("checks", 0) < 7
             or data.get("passed") is not True
         ):
             raise UGAError("Godot smoke checks failed or result identity is stale")

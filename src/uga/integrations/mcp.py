@@ -3,6 +3,7 @@
 import json
 import sys
 
+from uga import __version__
 from uga.core.contracts import TaskSpec
 
 TASK_SCHEMA = TaskSpec.model_json_schema()
@@ -67,7 +68,7 @@ class MCPAdapter:
             result = {
                 "protocolVersion": "2025-06-18",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "uga", "version": "0.1.0"},
+                "serverInfo": {"name": "uga", "version": __version__},
             }
         elif method == "ping":
             result = {}

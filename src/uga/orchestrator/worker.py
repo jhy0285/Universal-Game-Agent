@@ -162,7 +162,9 @@ def execute_task(raw: dict, root: str, analysis_root: str, connection):
 
                 p = ReverseParameters.model_validate(spec.parameters)
                 path = analysis_path(p.path)
-                result = analyze(path, output, authorized=spec.authorized).model_dump(mode="json")
+                result = analyze(
+                    path, output, authorized=spec.authorized, heartbeat=heartbeat
+                ).model_dump(mode="json")
         elif spec.agent == AgentKind.BUILDER:
             from uga.agents.builder.agent import generate, parse_requirements
 

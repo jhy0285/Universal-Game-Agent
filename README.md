@@ -38,7 +38,9 @@ uv sync --frozen --python 3.11 --no-python-downloads
 ```
 
 대시보드는 로컬 포트 8765에서 작동합니다. `uga service stop`으로 이 도구가 시작한 서버만
-종료합니다. API 토큰은 `.uga/api-token`에 생성되며 대시보드에는 자동 적용됩니다.
+종료합니다. API 토큰은 `.uga/api-token`에 생성됩니다. 대시보드는 `uga service start`·`status`가
+출력하는 `dashboard_url`로 여세요. 토큰은 서버로 전송되지 않는 URL 조각(`#token=`)으로만
+전달되고 페이지 HTML에는 들어가지 않습니다.
 GPU/VRAM 미측정 값은 미상으로 표시합니다. 외부 유료 API와 다른 AI 시스템 연결은 없습니다.
 
 ```sh

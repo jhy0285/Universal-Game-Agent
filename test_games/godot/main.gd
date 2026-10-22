@@ -16,6 +16,8 @@ var run_id: String = ""
 var elapsed: float = 0.0
 var render_sync: bool = false
 var publishing: bool = false
+var pending_action: String = ""
+const KEY_ACTIONS: Dictionary = {KEY_ESCAPE: "authenticate", KEY_Z: "attack", KEY_X: "use_item", KEY_SPACE: "jump", KEY_LEFT: "move_left", KEY_RIGHT: "move_right", KEY_UP: "move_up", KEY_DOWN: "move_down"}
 
 func _ready() -> void:
     var config: Dictionary = {}
@@ -158,6 +160,21 @@ func _process(_delta: float) -> void:
                     write_json(report_path, snapshot())
                 get_tree().quit(0 if won() else 2)
 
+func _unhandled_input(event: InputEvent) -> void:
+    # Keep a press made between 0.1 s samples so a short tap is applied exactly once.
+    var key := event as InputEventKey
+    if not bridge.is_empty() or key == null or not key.pressed or key.echo:
+        return
+    var action: String = KEY_ACTIONS.get(key.physical_keycode, "")
+    if action == "authenticate" or pending_action.is_empty():
+        pending_action = action
+
+func held_action() -> String:
+    for key in KEY_ACTIONS:
+        if Input.is_physical_key_pressed(key):
+            return KEY_ACTIONS[key]
+    return "wait"
+
 func _physics_process(delta: float) -> void:
     if not bridge.is_empty():
         return
@@ -165,23 +182,11 @@ func _physics_process(delta: float) -> void:
     if elapsed < 0.1:
         return
     elapsed = 0.0
-    var action: String = "wait"
-    if Input.is_physical_key_pressed(KEY_ESCAPE):
+    var action: String = held_action() if pending_action.is_empty() else pending_action
+    pending_action = ""
+    if action == "authenticate":
         auth_required = true
-    elif Input.is_physical_key_pressed(KEY_Z):
-        action = "attack"
-    elif Input.is_physical_key_pressed(KEY_X):
-        action = "use_item"
-    elif Input.is_physical_key_pressed(KEY_SPACE):
-        action = "jump"
-    elif Input.is_physical_key_pressed(KEY_LEFT):
-        action = "move_left"
-    elif Input.is_physical_key_pressed(KEY_RIGHT):
-        action = "move_right"
-    elif Input.is_physical_key_pressed(KEY_UP):
-        action = "move_up"
-    elif Input.is_physical_key_pressed(KEY_DOWN):
-        action = "move_down"
+        action = "wait"
     step(action)
 
 func _draw() -> void:

@@ -54,9 +54,11 @@ $ugaStamp = Get-Date -Format "yyyyMMdd-HHmmss"
 .\.venv\Scripts\uga.exe service status
 ```
 
-`http_smoke: passed`, service의 `healthy: true`를 확인합니다. 브라우저 주소창에
-`127.0.0.1:8765`를 입력하면 대시보드가 열립니다. Player, Builder, 소스 Reverse를 차례로
-실행해 결과와 미리보기를 확인하세요. API token을 복사하거나 공유할 필요는 없습니다.
+`http_smoke: passed`, service의 `healthy: true`를 확인합니다. `service status`가 출력한
+`dashboard_url`을 브라우저 주소창에 붙여 넣으면 대시보드가 열립니다. 토큰은 주소의 `#` 뒤에만
+있고 페이지가 열리면 주소창에서 지워집니다. 서버를 다시 시작하면 토큰이 바뀌므로 새
+`dashboard_url`로 다시 여세요. Player, Builder, 소스 Reverse를 차례로 실행해 결과와 미리보기를
+확인하세요. 이 주소나 API token을 다른 사람과 공유하지 마세요.
 
 종료:
 
@@ -77,7 +79,7 @@ $ugaStamp = Get-Date -Format "yyyyMMdd-HHmmss"
 .\.venv\Scripts\uga.exe workflow --backend godot --allow-external-tools --output ".uga\godot-workflow-$ugaStamp"
 ```
 
-6개 smoke 검사와 엔진 Player 성공을 확인합니다. 이 단계의 Player는 정답 브리지 backend이며,
+7개 smoke 검사와 엔진 Player 성공을 확인합니다. 이 단계의 Player는 정답 브리지 backend이며,
 실제 화면·키보드 입력 검증은 다음 단계입니다. JADX/Ghidra/REA나 모델은 이 검사에 필요 없습니다.
 `pytest --allow-analyzers`는 Linux 온보딩 전용 도구 경로를 사용하므로 로컬 Windows에서
 그대로 실행하지 마세요. Windows 분석 도구 설정은 [Reverse 검증](reverse-validation.md)을 참조합니다.
@@ -117,6 +119,10 @@ $ugaStamp = Get-Date -Format "yyyyMMdd-HHmmss"
 포커스를 검사합니다. 자동 캡처 영역은 매 프레임 다시 확인하며 수동 `--region`은 해당 client
 영역 안에서만 허용합니다. 다른 창으로 전환하면 입력을 해제하고 정지합니다. 게임 안에서
 Escape를 누르면 인증 정지 상태로 전환되며 다음 관측에서 사람에게 인계합니다.
+
+키 입력은 가상 키와 함께 하드웨어 scan code·확장 키 플래그를 보냅니다. 테스트 게임은
+물리 키를 읽으므로 scan code가 없으면 입력이 무시됩니다. 게임은 0.1초마다 한 번 행동을
+적용하며 그 사이의 짧은 키 누름도 한 번 반영합니다.
 
 `result.json`의 success/stop_reason/verified_effects와 `trace.jsonl`을 확인하세요.
 Windows 입력 성공은 이 결과로 판정해야 합니다. Linux fixture 검사나 GitHub CI의 통과가

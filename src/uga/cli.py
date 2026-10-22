@@ -31,6 +31,7 @@ def _main(argv: list[str] | None = None) -> int:
     player.add_argument("--attack-range", type=float)
     player.add_argument("--navigation-mode", choices=["euclidean", "geodesic"])
     player.add_argument("--resume", type=Path)
+    player.add_argument("--state-dir", type=Path, default=Path(".uga"))
     player.add_argument("--output", type=Path, default=Path(".uga/player"))
     for name in ("desktop-play", "desktop-check"):
         desktop = commands.add_parser(
@@ -185,17 +186,18 @@ def _main(argv: list[str] | None = None) -> int:
     elif args.command == "player":
         from uga.agents.player.policies import RuleBasedPolicy
         from uga.agents.player.runner import run_episode
+        from uga.evaluation.experiments import with_active_policy
         from uga.memory.store import Store
         from uga.test_game import ArenaConfig
 
-        active = Store(Path(".uga")).load_checkpoint("active-policy") or {}
-        attack_range = (
-            args.attack_range if args.attack_range is not None else active.get("attack_range", 14)
+        requested = {"attack_range": args.attack_range, "navigation_mode": args.navigation_mode}
+        policy = with_active_policy(
+            Store(args.state_dir), {k: v for k, v in requested.items() if v is not None}
         )
         result = run_episode(
             None if args.resume else ArenaConfig(seed=args.seed, max_steps=args.max_steps),
             RuleBasedPolicy(
-                attack_range, args.navigation_mode or active.get("navigation_mode", "euclidean")
+                policy.get("attack_range", 14), policy.get("navigation_mode", "euclidean")
             ),
             args.output,
             resume=json.loads(args.resume.read_text(encoding="utf-8")) if args.resume else None,

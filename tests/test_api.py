@@ -1,4 +1,5 @@
 import hashlib
+import os
 import time
 
 from fastapi.testclient import TestClient
@@ -28,7 +29,12 @@ def wait(client, identity):
 def test_dashboard_and_local_authorization(tmp_path):
     app = create_app(tmp_path)
     with TestClient(app) as client:
-        assert client.get("/").status_code == 200
+        page = client.get("/")
+        assert page.status_code == 200 and app.state.token not in page.text
+        token_file = tmp_path / "api-token"
+        assert token_file.read_text(encoding="utf-8") == app.state.token
+        if os.name != "nt":
+            assert token_file.stat().st_mode & 0o077 == 0
         assert client.get("/static/app.js").status_code == 200
         assert client.get("/static/style.css").status_code == 200
         assert client.get("/docs").status_code == 200

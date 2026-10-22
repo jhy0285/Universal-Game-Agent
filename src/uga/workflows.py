@@ -64,7 +64,9 @@ def build_play(
     _check_backend(backend, approved, export_preset)
     spec = parse_requirements(requirements)
     generated = generate(spec, output / "project")
-    analyzed = analyze(output / "project", output / "analysis", authorized=True)
+    analyzed = analyze(
+        output / "project", output / "analysis", authorized=True, heartbeat=heartbeat
+    )
     report = {
         "generated": generated,
         "analysis": analyzed.model_dump(mode="json"),
@@ -86,7 +88,7 @@ def reverse_build_play(
     export_preset=None,
 ):
     _check_backend(backend, approved, export_preset)
-    spec = analyze(source, output / "source-analysis", authorized=authorized)
+    spec = analyze(source, output / "source-analysis", authorized=authorized, heartbeat=heartbeat)
     if spec.genre != "top_down_arena":
         raise CapabilityUnavailable(
             "No supported, source-declared arena GameSpec was recovered; reconstruction cannot be inferred from unknown binary mechanics"

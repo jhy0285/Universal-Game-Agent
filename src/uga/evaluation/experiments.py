@@ -4,6 +4,14 @@ from uga.core.contracts import ArtifactReference, EvaluationResult
 from uga.core.errors import AuthorizationRequired, UGAError
 from uga.memory.store import Store
 
+POLICY_KEYS = ("attack_range", "navigation_mode")
+
+
+def with_active_policy(store: Store, parameters: dict) -> dict:
+    """Fill each policy parameter the caller left unspecified from the approved active policy."""
+    active = store.load_checkpoint("active-policy") or {}
+    return {**{key: active[key] for key in POLICY_KEYS if key in active}, **parameters}
+
 
 def compare(
     baseline: EvaluationResult, candidate: EvaluationResult, latency_regression: float = 0.25

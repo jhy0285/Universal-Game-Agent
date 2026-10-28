@@ -46,6 +46,15 @@ def write_private(path: Path, text: str):
             os.unlink(name)
 
 
+def token_matches(supplied: str, expected: str | None) -> bool:
+    """Constant-time check; compares bytes because compare_digest rejects non-ASCII str."""
+    if not expected:
+        return False
+    return secrets.compare_digest(
+        supplied.encode("utf-8", "replace"), expected.encode("utf-8", "replace")
+    )
+
+
 def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -> FastAPI:
     root = (root or Path(".uga")).resolve()
 
@@ -87,8 +96,7 @@ def create_app(root: Path | None = None, *, analysis_root: Path | None = None) -
             token = request.headers.get("x-uga-token", "")
             if not token and request.headers.get("authorization", "").startswith("Bearer "):
                 token = request.headers["authorization"][7:]
-            expected = getattr(app.state, "token", None)
-            if not expected or not secrets.compare_digest(token, expected):
+            if not token_matches(token, getattr(app.state, "token", None)):
                 return JSONResponse({"detail": "local capability token required"}, 401)
         if request.method in ("POST", "PUT", "PATCH", "DELETE"):
             if len(await request.body()) > 65536:

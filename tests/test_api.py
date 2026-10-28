@@ -4,7 +4,7 @@ import time
 
 from fastapi.testclient import TestClient
 
-from uga.api import create_app
+from uga.api import create_app, token_matches
 
 
 def test_health_contracts_and_capabilities(tmp_path):
@@ -69,6 +69,33 @@ def test_dashboard_and_local_authorization(tmp_path):
             ).status_code
             == 422
         )
+
+
+def test_non_ascii_token_headers_are_rejected_not_crashed(tmp_path):
+    app = create_app(tmp_path)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        non_ascii = "café".encode("latin-1")
+        for headers in (
+            {"X-UGA-Token": non_ascii},
+            {"Authorization": b"Bearer " + non_ascii},
+        ):
+            response = client.get("/api/v1/jobs", headers=headers)
+            assert response.status_code == 401, headers
+            assert response.json() == {"detail": "local capability token required"}
+        assert (
+            client.get("/api/v1/jobs", headers={"X-UGA-Token": app.state.token}).status_code == 200
+        )
+        bearer = {"Authorization": "Bearer " + app.state.token}
+        assert client.get("/api/v1/jobs", headers=bearer).status_code == 200
+
+
+def test_token_matches_handles_unencodable_and_missing_values():
+    assert token_matches("abc", "abc")
+    assert not token_matches("abd", "abc")
+    assert not token_matches("café", "abc")
+    assert not token_matches("\ud800", "abc")
+    assert not token_matches("abc", None)
+    assert not token_matches("", "")
 
 
 def test_http_build_analyze_play_cancel_and_artifact_integrity(tmp_path):

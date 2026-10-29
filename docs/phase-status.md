@@ -75,6 +75,24 @@ GitHub CI에서 발견한 Windows/Python 3.12의 짧은 soak 실패는 초기 �
 Chromium 141 대시보드 검사도 통과했으며, Builder Godot 작업과 Player 목표 달성에서 JavaScript 오류는
 0개였습니다. 이 컨테이너는 Chromium 샌드박스를 지원하지 않아 그 옵션만 끈 사본으로 실행했습니다.
 
+## 후속 수정과 인수인계 (2026-10-28~29)
+
+- **API 토큰 헤더**: 비-ASCII `X-UGA-Token`(또는 Bearer) 값이 들어오면 `secrets.compare_digest`가
+  `TypeError`를 내서 인증 미들웨어가 401 대신 500을 반환했습니다. 인증이 통과되지는 않았습니다.
+  요청을 재현해 500을 확인한 뒤 `token_matches`로 바이트를 비교하도록 고쳤고, 두 헤더 방식과
+  인코딩 불가능한 값에 대한 테스트 2개를 추가했습니다(`dc7cc51`).
+- **검증**: Linux Python 3.13.17에서 `ruff check`·`ruff format --check` 통과, 기본 pytest
+  **89 passed / 7 skipped**, 라인 커버리지 73%입니다. 이 환경에는 Godot/JADX/Ghidra가 없어 외부 도구
+  테스트 7개는 다시 실행하지 않았고, Python 3.11/3.12 로컬 재실행도 하지 않았습니다. 푸시한 커밋의
+  [GitHub CI](https://github.com/jhy0285/Universal-Game-Agent/actions/runs/40613342587)는
+  Windows/Linux × Python 3.11/3.12 네 조합이 모두 성공했습니다.
+- **새로 확인한 미수정 문제**: 오케스트레이터 모니터 스레드가 예외로 끝나면 실행 중 작업이 `running`으로
+  남고 워커가 계속 실행되며 마감·heartbeat 감시가 멈춥니다(`_tick`에 예외를 주입해 재현). 수정 계획은
+  [next-steps.md](next-steps.md)의 1번입니다.
+- **인수인계 문서**: [AGENTS.md](../AGENTS.md)(AI 공통 작업 안내), [CLAUDE.md](../CLAUDE.md)(Claude Code
+  포인터), [next-steps.md](next-steps.md)(우선순위·완료 기준)를 추가했습니다. 이 변경은 문서뿐이며
+  동작과 검증 범위를 바꾸지 않습니다.
+
 ## 실제 실행과 재현 (기준선 2325340)
 
 외부 도구는 사용자가 승인한 자체 프로젝트와 fixture에 한해 실행했습니다. 다음 명령은

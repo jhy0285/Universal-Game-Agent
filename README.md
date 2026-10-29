@@ -9,6 +9,9 @@ Windows 11 / Python 3.11을 목표로 하며 Python 3.12와 Linux 개발도 지�
 임의의 상용 게임을 이해하는 완성된 AI는 아닙니다. 단계별 실제 실행 결과와
 미완료 범위는 [검증 현황](docs/phase-status.md)에 기록합니다.
 
+AI 코딩 에이전트로 이어서 작업하려면 저장소만 연결하고 [AGENTS.md](AGENTS.md)(규칙·시작 절차)와
+[다음 작업](docs/next-steps.md)을 먼저 읽게 하세요.
+
 로컬 PC에서 저장소 받기 (Git 필요):
 
 ```sh
